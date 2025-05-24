@@ -1,0 +1,95 @@
+import Session from '../models/session.model.js';
+
+// Create a new washing machine session
+export const createSession = async (req, res) => {
+    try {
+        const { name, phoneNumber, duration, machineNumber } = req.body; 
+
+
+        if (!name || !phoneNumber || !duration || !machineNumber) {
+            return res.status(400).json({ 
+                message: "Please provide all required fields: name, phoneNumber, duration, and machineNumber" 
+            });
+        }
+
+
+        const existingSession = await Session.findOne({
+            machineNumber,
+            isActive: true,
+            startTime: { 
+                $lt: new Date(Date.now() + duration * 60000) 
+            }
+        });
+
+        if (existingSession) {
+            return res.status(400).json({ 
+                message: "This machine is already in use for the requested duration" 
+            });
+        }
+
+
+        const newSession = new Session({
+            name,
+            phoneNumber,
+            duration,
+            machineNumber,
+            startTime: new Date()
+        });
+
+
+        const savedSession = await newSession.save();
+
+        res.status(201).json({
+            message: "Session created successfully",
+            session: savedSession
+        });
+
+    } catch (error) {
+        res.status(500).json({ 
+            message: "Error creating session",
+            error: error.message 
+        });
+    }
+};
+
+// Get all sessions
+export const getSessions = async (req, res) => {
+    try {
+        const sessions = await Session.find().sort({ createdAt: -1 });
+        res.status(200).json({ sessions });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching sessions", error: error.message });
+    }
+};
+
+// Get active sessions
+export const getActiveSessions = async (req, res) => {
+    try {
+        const activeSessions = await Session.find({ isActive: true }).sort({ createdAt: -1 });
+        res.status(200).json({ sessions: activeSessions });
+    } catch (error) {
+        res.status(500).json({
+             message: "Error fetching active sessions", error: error.message 
+        });
+    }
+};
+
+// Delete a session 
+export const deleteSession = async (req, res) => {
+    try {
+        const session = await Session.findById(req.params.id);
+        if(!session){
+            return res.status(404).json({ message: "Session not found" });
+        }
+
+        await Session.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            message: "Session deleted successfully"
+        })
+    } catch (error) {
+        res.status(500).json({ 
+            message: error.message
+        });
+    }
+};
