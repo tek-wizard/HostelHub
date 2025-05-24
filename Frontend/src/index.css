@@ -3,8 +3,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* HostelHub Styles
+ * Main stylesheet for the washing machine booking interface
+ * Updated: 2024
+ */
+
 /* CSS Variables for consistent theming */
 :root {
+  /* Colors */
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #6b7280;
   --color-text-muted: #9ca3af;
@@ -22,7 +28,7 @@
   --color-danger: #ef4444;
   --color-danger-light: #fee2e2;
   
-  /* Spacing */
+  /* Spacing scale */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;

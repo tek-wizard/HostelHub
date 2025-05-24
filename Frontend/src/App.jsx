@@ -4,47 +4,67 @@ import WashingMachine from './components/WashingMachine';
 import MachineModal from './components/MachineModal';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import { storage, isMobile } from './utils';
+
+const TOTAL_MACHINES = 30;
+const MACHINES_PER_FLOOR = 6;
+const REFRESH_INTERVAL = 30000; // 30 seconds - could be configurable
 
 function App() {
+  // Main state - probably should organize this better at some point
   const [machines, setMachines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFloor, setSelectedFloor] = useState(1);
+  
+  // Use storage utility for persisting selected floor
+  const [selectedFloor, setSelectedFloor] = useState(() => {
+    return storage.get('hostelhub_selected_floor', 1);
+  });
+  
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Generate 30 machines with floor assignments
+  // Detect if user is on mobile for better UX
+  const userIsMobile = isMobile();
+
+  // Helper function to calculate which floor a machine is on
+  const getFloorNumber = (machineNumber) => {
+    return Math.ceil(machineNumber / MACHINES_PER_FLOOR);
+  };
+
+  // Generate machine data - this combines real backend data with generated ones
+  // for demo purposes since we might not have all 30 machines in backend
   const generateMachines = (backendMachines, allSessions = []) => {
     const generatedMachines = [];
     
-    for (let i = 1; i <= 30; i++) {
-      const floor = Math.ceil(i / 6); // 6 machines per floor
-      const machineOnFloor = ((i - 1) % 6) + 1;
+    for (let i = 1; i <= TOTAL_MACHINES; i++) {
+      const floor = getFloorNumber(i);
+      const positionOnFloor = ((i - 1) % MACHINES_PER_FLOOR) + 1;
       
-      // Check if we have backend data for this machine number
+      // Check if we have real data from backend for this machine
       const backendMachine = backendMachines.find(m => m.machineNumber === i);
       
-      // Check if there's an active session for this machine number
+      // Look for any active sessions for this machine
       const activeSession = allSessions.find(session => 
         session.machineNumber === i && session.isActive !== false
       );
       
       if (backendMachine) {
-        // Use backend data if available (machines 1-5 typically)
+        // Use real backend data when available
         generatedMachines.push({
           ...backendMachine,
           floor: floor,
-          location: `Floor ${floor} - Position ${machineOnFloor}`
+          location: `Floor ${floor} - Position ${positionOnFloor}`
         });
       } else {
-        // Generate machine for numbers 6-30, but check for active sessions
+        // Generate demo data for machines not in backend
         let status = 'available';
         let sessionData = null;
         
         if (activeSession) {
-          // Check if session is expired to determine status
+          // Figure out status based on session timing
           const endTime = new Date(activeSession.startTime).getTime() + (activeSession.duration * 60000);
           const now = new Date().getTime();
           
@@ -67,7 +87,7 @@ function App() {
         generatedMachines.push({
           machineNumber: i,
           floor: floor,
-          location: `Floor ${floor} - Position ${machineOnFloor}`,
+          location: `Floor ${floor} - Position ${positionOnFloor}`,
           status: status,
           session: sessionData,
           isActive: true
@@ -78,35 +98,29 @@ function App() {
     return generatedMachines;
   };
 
-  // Fetch machine status from backend
-  const fetchMachineStatus = async (showRefreshIndicator = false) => {
+  // Main function to fetch data from backend
+  const fetchMachineStatus = async (isRefresh = false) => {
     try {
-      if (showRefreshIndicator) {
+      if (isRefresh) {
         setRefreshing(true);
       } else {
         setLoading(true);
       }
       
-      console.log('Fetching machine status from backend...');
-      
-      // Fetch both machine status and all sessions
       const [machineData, sessionData] = await Promise.all([
         sessionAPI.getMachineStatus(),
         sessionAPI.getAllSessions()
       ]);
       
-      console.log('Machine status fetched successfully:', machineData.machines);
-      console.log('Sessions fetched successfully:', sessionData.sessions);
-      
-      // Generate 30 machines using backend data where available
       const allMachines = generateMachines(
         machineData.machines || [], 
         sessionData.sessions || []
       );
+      
       setMachines(allMachines);
       setError('');
+      
     } catch (err) {
-      console.error('Failed to fetch machine status:', err);
       setError(`Failed to load machine status: ${err.message}`);
     } finally {
       setLoading(false);
@@ -114,178 +128,176 @@ function App() {
     }
   };
 
-  // Initial data fetch
+  // Set up initial data loading and auto-refresh
   useEffect(() => {
-    console.log('App component mounted, fetching initial data...');
     fetchMachineStatus();
     
-    // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchMachineStatus(true);
-    }, 30000);
+    }, REFRESH_INTERVAL);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
-  // Handle machine click
+  // Save selected floor to localStorage whenever it changes
+  useEffect(() => {
+    storage.set('hostelhub_selected_floor', selectedFloor);
+  }, [selectedFloor]);
+
+  // Handle machine click/selection
   const handleMachineClick = (machine) => {
-    try {
-      console.log('Machine clicked:', machine);
-      setSelectedMachine(machine);
-      setIsModalOpen(true);
-    } catch (err) {
-      console.error('Error handling machine click:', err);
-      setError('Error opening machine details');
-    }
+    setSelectedMachine(machine);
+    setIsModalOpen(true);
   };
 
-  // Handle booking a machine
+  // Handle machine booking
   const handleBookMachine = async (sessionData) => {
     try {
-      console.log('Booking machine with data:', sessionData);
       await sessionAPI.createSession(sessionData);
-      console.log('Machine booked successfully, refreshing data...');
-      
-      // Refresh machine status after booking
       await fetchMachineStatus(true);
     } catch (err) {
-      console.error('Failed to book machine:', err);
       throw new Error(err.message || 'Failed to book machine');
     }
   };
 
-  // Handle deleting a session
+  // Handle session deletion
   const handleDeleteSession = async (sessionId) => {
     try {
-      console.log('Deleting session:', sessionId);
       await sessionAPI.deleteSession(sessionId);
-      console.log('Session deleted successfully, refreshing data...');
-      
-      // Refresh machine status after deletion
       await fetchMachineStatus(true);
     } catch (err) {
-      console.error('Failed to delete session:', err);
       throw new Error(err.message || 'Failed to delete session');
     }
   };
 
-  // Handle modal close
+  // Close modal
   const handleModalClose = () => {
-    setIsModalOpen(false);
     setSelectedMachine(null);
+    setIsModalOpen(false);
   };
 
-  // Manual refresh
+  // Manual refresh button
   const handleRefresh = () => {
-    console.log('Manual refresh triggered');
     fetchMachineStatus(true);
   };
 
-  // Handle floor selection
+  // Floor selection handling
   const handleFloorSelection = (floor) => {
     setSelectedFloor(floor);
-    setIsMobileSidebarOpen(false); // Close mobile dropdown when floor is selected
+    if (userIsMobile) {
+      setIsMobileSidebarOpen(false);
+    }
   };
 
-  // Toggle mobile sidebar
+  // Mobile sidebar toggle
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
   };
 
-  // Filter machines by selected floor
+  // Get machines for the currently selected floor
   const getFloorMachines = () => {
     return machines.filter(machine => machine.floor === selectedFloor);
   };
 
-  // Get status summary for selected floor
+  // Get status summary for a specific floor
   const getFloorSummary = (floor) => {
     const floorMachines = machines.filter(m => m.floor === floor);
     const available = floorMachines.filter(m => m.status === 'available').length;
     const occupied = floorMachines.filter(m => m.status === 'occupied').length;
-    const waitingPickup = floorMachines.filter(m => m.status === 'waiting_pickup').length;
-    return { available, occupied, waitingPickup, total: floorMachines.length };
+    const waiting = floorMachines.filter(m => m.status === 'waiting_pickup').length;
+    return { available, occupied, waiting, total: floorMachines.length };
   };
 
-  // Get overall status summary
+  // Get overall summary across all machines
   const getOverallSummary = () => {
     const available = machines.filter(m => m.status === 'available').length;
     const occupied = machines.filter(m => m.status === 'occupied').length;
-    const waitingPickup = machines.filter(m => m.status === 'waiting_pickup').length;
-    return { available, occupied, waitingPickup, total: machines.length };
+    const waiting = machines.filter(m => m.status === 'waiting_pickup').length;
+    return { available, occupied, waiting, total: machines.length };
   };
 
+  // Show loading screen while initial data loads
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-card">
-          <div className="spinner"></div>
-          <h2 style={{fontSize: '24px', fontWeight: 'bold', color: 'var(--color-text-primary)', marginBottom: '12px'}}>Loading HostelHub</h2>
-          <p style={{color: 'var(--color-text-secondary)'}}>Connecting to washing machines...</p>
+      <div className="app-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <h2>Loading HostelHub</h2>
+          <p>Fetching machine status...</p>
         </div>
       </div>
     );
   }
 
+  if (error && machines.length === 0) {
+    return (
+      <div className="app-container">
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h2>Connection Error</h2>
+          <p>{error}</p>
+          <button onClick={handleRefresh} className="retry-button">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const totalFloors = Math.ceil(TOTAL_MACHINES / MACHINES_PER_FLOOR);
   const floorMachines = getFloorMachines();
   const overallSummary = getOverallSummary();
 
   return (
     <div className="app-container">
-      {/* Header */}
+      {/* App Header */}
       <Header 
-        overallSummary={overallSummary}
+        summary={overallSummary}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+        onToggleSidebar={toggleMobileSidebar}
+        isMobile={userIsMobile}
+        error={error}
       />
 
       {/* Main Layout */}
       <div className="main-layout">
-        {/* Sidebar */}
+        {/* Floor Navigation Sidebar */}
         <Sidebar
           selectedFloor={selectedFloor}
-          onFloorSelection={handleFloorSelection}
+          onFloorSelect={handleFloorSelection}
+          totalFloors={totalFloors}
           getFloorSummary={getFloorSummary}
-          isMobileSidebarOpen={isMobileSidebarOpen}
-          onToggleMobileSidebar={toggleMobileSidebar}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          isMobile={userIsMobile}
         />
 
-        {/* Main Content */}
+        {/* Main Content Area */}
         <main className="main-content">
           {/* Floor Header */}
           <div className="floor-header">
-            <h2>Floor {selectedFloor}</h2>
-            <p>{floorMachines.length} washing machines</p>
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="error-card">
-              <div style={{display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-md)'}}>
-                <div>
-                  <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div style={{flex: '1'}}>
-                  <h3 style={{fontSize: '16px', fontWeight: '600', marginBottom: 'var(--spacing-xs)'}}>Connection Error</h3>
-                  <p style={{marginBottom: 'var(--spacing-md)'}}>{error}</p>
-                  <button onClick={handleRefresh} className="btn btn-danger">
-                    <svg style={{width: '14px', height: '14px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Try Again
-                  </button>
-                </div>
-              </div>
+            <h1>Floor {selectedFloor}</h1>
+            <div className="floor-summary">
+              {(() => {
+                const summary = getFloorSummary(selectedFloor);
+                return (
+                  <div className="summary-stats">
+                    <span className="stat available">{summary.available} Available</span>
+                    <span className="stat occupied">{summary.occupied} In Use</span>
+                    <span className="stat waiting">{summary.waiting} Pickup</span>
+                  </div>
+                );
+              })()}
             </div>
-          )}
+          </div>
 
           {/* Machines Grid */}
           {floorMachines.length === 0 ? (
-            <div className="empty-state">
-              <div style={{fontSize: '48px', marginBottom: 'var(--spacing-md)'}}>🧺</div>
-              <h3>No Machines on This Floor</h3>
-              <p>There are no washing machines available on Floor {selectedFloor}.</p>
+            <div className="empty-floor">
+              <p>No machines found on this floor</p>
             </div>
           ) : (
             <div className="machines-grid">
@@ -298,7 +310,7 @@ function App() {
                 >
                   <WashingMachine
                     machine={machine}
-                    onClick={handleMachineClick}
+                    onClick={() => handleMachineClick(machine)}
                   />
                 </div>
               ))}
@@ -307,7 +319,7 @@ function App() {
         </main>
       </div>
 
-      {/* Modal */}
+      {/* Machine Booking Modal */}
       {isModalOpen && selectedMachine && (
         <MachineModal
           machine={selectedMachine}

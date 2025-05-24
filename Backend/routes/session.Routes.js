@@ -9,9 +9,6 @@ import {
 
 const router = express.Router();
 
-
-
-
 // Session routes
 router.post("/create", createSession);
 router.get("/all", getSessions);
