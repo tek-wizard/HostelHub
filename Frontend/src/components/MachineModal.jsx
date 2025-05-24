@@ -15,7 +15,14 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
             console.log('Modal opened for machine:', machine);
             setFormData({ name: '', phoneNumber: '', duration: '' });
             setError('');
+            // Prevent body scroll when modal opens
+            document.body.classList.add('modal-open');
         }
+        
+        // Cleanup function to remove class when component unmounts or machine changes
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
     }, [machine]);
 
     const handleInputChange = (e) => {
@@ -88,7 +95,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
             await onBookMachine(sessionData);
             console.log('Machine booked successfully');
-            onClose();
+            handleClose();
         } catch (error) {
             console.error('Error booking machine:', error);
             setError(error.message || 'Failed to book machine. Please try again.');
@@ -109,7 +116,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
             await onDeleteSession(machine.session.id);
             console.log('Session deleted successfully');
-            onClose();
+            handleClose();
         } catch (error) {
             console.error('Error deleting session:', error);
             setError(error.message || 'Failed to delete session. Please try again.');
@@ -130,7 +137,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
             await onDeleteSession(machine.session.id);
             console.log('Clothes picked up successfully, session deleted');
-            onClose();
+            handleClose();
         } catch (error) {
             console.error('Error during pickup:', error);
             setError(error.message || 'Failed to process pickup. Please try again.');
@@ -156,9 +163,15 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
         }
     };
 
+    // Handle modal close with cleanup
+    const handleClose = () => {
+        document.body.classList.remove('modal-open');
+        onClose();
+    };
+
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
-            onClose();
+            handleClose();
         }
     };
 
@@ -244,6 +257,13 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
             <div className="modal-content">
                 {/* Header */}
                 <div className="modal-header" style={{background: statusConfig.bg}}>
+                    <button 
+                        className="modal-close-btn"
+                        onClick={handleClose}
+                        aria-label="Close modal"
+                    >
+                        ×
+                    </button>
                     <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
                         <div style={{fontSize: '32px'}}>{statusConfig.icon}</div>
                         <div>
@@ -256,20 +276,39 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                 {/* Content */}
                 <div className="modal-body">
                     {/* Machine Details */}
-                    <div style={{background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)', borderRadius: '12px', padding: '20px', marginBottom: '24px', border: '1px solid #e2e8f0'}}>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)', 
+                        borderRadius: '12px', 
+                        padding: '20px', 
+                        marginBottom: '24px', 
+                        border: '1px solid #e2e8f0',
+                        animation: 'slideUpFadeIn 0.5s ease-out 0.1s both'
+                    }}>
                         <h4 style={{fontSize: '16px', fontWeight: 'bold', color: '#2d3748', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
                             <div style={{width: '8px', height: '8px', background: '#667eea', borderRadius: '50%'}}></div>
                             Machine Details
                         </h4>
                         
                         <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px'}}>
-                            <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
+                            <div style={{
+                                background: 'white', 
+                                borderRadius: '8px', 
+                                padding: '12px', 
+                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                animation: 'scaleIn 0.4s ease-out 0.2s both'
+                            }}>
                                 <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>NUMBER</div>
                                 <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.machineNumber}</div>
                             </div>
                             
                             {machine.location && (
-                                <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
+                                <div style={{
+                                    background: 'white', 
+                                    borderRadius: '8px', 
+                                    padding: '12px', 
+                                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                    animation: 'scaleIn 0.4s ease-out 0.3s both'
+                                }}>
                                     <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>LOCATION</div>
                                     <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.location}</div>
                                 </div>
@@ -279,7 +318,14 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
                     {/* Error Display */}
                     {error && (
-                        <div style={{background: 'rgba(245, 101, 101, 0.1)', border: '2px solid rgba(245, 101, 101, 0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px'}}>
+                        <div style={{
+                            background: 'rgba(245, 101, 101, 0.1)', 
+                            border: '2px solid rgba(245, 101, 101, 0.3)', 
+                            borderRadius: '12px', 
+                            padding: '16px', 
+                            marginBottom: '24px',
+                            animation: 'slideInFromLeft 0.5s ease-out'
+                        }}>
                             <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                                 <svg style={{width: '20px', height: '20px', color: '#f56565', flexShrink: 0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -294,28 +340,61 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
                     {/* Current Session Information */}
                     {machine.session && (
-                        <div className="session-info" style={{marginBottom: '24px'}}>
+                        <div className="session-info" style={{
+                            marginBottom: '24px',
+                            animation: 'slideUpFadeIn 0.6s ease-out 0.2s both'
+                        }}>
                             <h4 className="session-title">Active Session</h4>
                             
-                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '12px'}}>
-                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                            <div style={{
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(2, 1fr)', 
+                                gap: '12px', 
+                                marginBottom: '12px'
+                            }}>
+                                <div style={{
+                                    background: 'rgba(255, 255, 255, 0.7)', 
+                                    borderRadius: '8px', 
+                                    padding: '12px',
+                                    animation: 'scaleIn 0.4s ease-out 0.3s both'
+                                }}>
                                     <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>User</div>
                                     <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>{machine.session.name || machine.session.userName}</div>
                                 </div>
                                 
-                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                <div style={{
+                                    background: 'rgba(255, 255, 255, 0.7)', 
+                                    borderRadius: '8px', 
+                                    padding: '12px',
+                                    animation: 'scaleIn 0.4s ease-out 0.4s both'
+                                }}>
                                     <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>Phone</div>
                                     <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>{machine.session.phoneNumber}</div>
                                 </div>
                             </div>
 
-                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '12px'}}>
-                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                            <div style={{
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(2, 1fr)', 
+                                gap: '12px', 
+                                marginBottom: '12px'
+                            }}>
+                                <div style={{
+                                    background: 'rgba(255, 255, 255, 0.7)', 
+                                    borderRadius: '8px', 
+                                    padding: '12px',
+                                    animation: 'scaleIn 0.4s ease-out 0.5s both'
+                                }}>
                                     <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>Duration</div>
                                     <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>{machine.session.duration} minutes</div>
                                 </div>
                                 
-                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                <div style={{
+                                    background: 'rgba(255, 255, 255, 0.7)', 
+                                    borderRadius: '8px', 
+                                    padding: '12px',
+                                    animation: 'scaleIn 0.4s ease-out 0.6s both'
+                                }}>
                                     <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>
                                         {isWaitingPickup ? 'Waiting Time' : 'Time Left'}
                                     </div>
@@ -325,7 +404,12 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 </div>
                             </div>
 
-                            <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                            <div style={{
+                                background: 'rgba(255, 255, 255, 0.7)', 
+                                borderRadius: '8px', 
+                                padding: '12px',
+                                animation: 'scaleIn 0.4s ease-out 0.7s both'
+                            }}>
                                 <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>Started At</div>
                                 <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>
                                     {new Date(machine.session.startTime).toLocaleString()}
@@ -333,7 +417,15 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                             </div>
 
                             {isWaitingPickup && (
-                                <div style={{background: '#fed7aa', border: '1px solid #f59e0b', borderRadius: '8px', padding: '12px', textAlign: 'center', marginTop: '12px'}}>
+                                <div style={{
+                                    background: '#fed7aa', 
+                                    border: '1px solid #f59e0b', 
+                                    borderRadius: '8px', 
+                                    padding: '12px', 
+                                    textAlign: 'center', 
+                                    marginTop: '12px',
+                                    animation: 'bounceIn 0.6s ease-out 0.8s both'
+                                }}>
                                     <div style={{color: '#92400e', fontWeight: 'bold', fontSize: '14px'}}>
                                         🧺 Clothes ready for pickup!
                                     </div>
@@ -344,13 +436,23 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
                     {/* Available - Booking Form */}
                     {isAvailable && (
-                        <div style={{background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', borderRadius: '16px', padding: '24px', border: '1px solid #a7f3d0', marginBottom: '24px'}}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', 
+                            borderRadius: '16px', 
+                            padding: '24px', 
+                            border: '1px solid #a7f3d0', 
+                            marginBottom: '24px',
+                            animation: 'slideUpFadeIn 0.6s ease-out 0.3s both'
+                        }}>
                             <h4 style={{fontSize: '18px', fontWeight: 'bold', color: '#065f46', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px'}}>
                                 <span style={{fontSize: '22px'}}>✨</span>
                                 Book This Machine
                             </h4>
 
-                            <div style={{marginBottom: '20px'}}>
+                            <div style={{
+                                marginBottom: '20px',
+                                animation: 'slideUpFadeIn 0.4s ease-out 0.5s both'
+                            }}>
                                 <label style={{display: 'block', fontSize: '14px', fontWeight: '600', color: '#047857', marginBottom: '8px'}}>Your Name</label>
                                 <input
                                     type="text"
@@ -364,7 +466,10 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 />
                             </div>
 
-                            <div style={{marginBottom: '20px'}}>
+                            <div style={{
+                                marginBottom: '20px',
+                                animation: 'slideUpFadeIn 0.4s ease-out 0.6s both'
+                            }}>
                                 <label style={{display: 'block', fontSize: '14px', fontWeight: '600', color: '#047857', marginBottom: '8px'}}>Phone Number</label>
                                 <input
                                     type="tel"
@@ -378,7 +483,10 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 />
                             </div>
 
-                            <div style={{marginBottom: '24px'}}>
+                            <div style={{
+                                marginBottom: '24px',
+                                animation: 'slideUpFadeIn 0.4s ease-out 0.7s both'
+                            }}>
                                 <label style={{display: 'block', fontSize: '14px', fontWeight: '600', color: '#047857', marginBottom: '8px'}}>Duration (minutes)</label>
                                 <select
                                     name="duration"
@@ -417,7 +525,8 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                     justifyContent: 'center',
                                     gap: '8px',
                                     fontFamily: 'Inter, sans-serif',
-                                    opacity: isLoading ? 0.7 : 1
+                                    opacity: isLoading ? 0.7 : 1,
+                                    animation: 'bounceIn 0.6s ease-out 0.8s both'
                                 }}
                             >
                                 {isLoading ? (
@@ -445,7 +554,12 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                     )}
 
                     {/* Action Buttons */}
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                    <div style={{
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '12px',
+                        animation: 'slideUpFadeIn 0.5s ease-out 0.4s both'
+                    }}>
                         {isOccupied && (
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
                                 <button onClick={handleCallUser} className="btn btn-primary">

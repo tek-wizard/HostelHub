@@ -9,13 +9,14 @@ import {
 
 const router = express.Router();
 
-// Machine status route
-router.get("/machine-status", getMachineStatus);
+
+
 
 // Session routes
 router.post("/create", createSession);
 router.get("/all", getSessions);
 router.get("/active", getActiveSessions);
 router.delete("/:id", deleteSession);
+router.get("/machine-status", getMachineStatus);
 
 export default router;
