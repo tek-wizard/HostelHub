@@ -10,6 +10,77 @@ function App() {
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedFloor, setSelectedFloor] = useState(1);
+
+  // Machine names to assign randomly
+  const machineNames = ['Shrival', 'Prateek', 'Pratham', 'Raghavendra'];
+
+  // Generate 30 machines with names and floor assignments
+  const generateMachines = (backendMachines, allSessions = []) => {
+    const generatedMachines = [];
+    
+    for (let i = 1; i <= 30; i++) {
+      const floor = Math.ceil(i / 6); // 6 machines per floor
+      const machineOnFloor = ((i - 1) % 6) + 1;
+      const randomName = machineNames[Math.floor(Math.random() * machineNames.length)];
+      
+      // Check if we have backend data for this machine number
+      const backendMachine = backendMachines.find(m => m.machineNumber === i);
+      
+      // Check if there's an active session for this machine number
+      const activeSession = allSessions.find(session => 
+        session.machineNumber === i && session.isActive !== false
+      );
+      
+      if (backendMachine) {
+        // Use backend data if available (machines 1-5 typically)
+        generatedMachines.push({
+          ...backendMachine,
+          name: `${randomName} ${machineOnFloor}`,
+          floor: floor,
+          location: `Floor ${floor} - Position ${machineOnFloor}`
+        });
+      } else {
+        // Generate machine for numbers 6-30, but check for active sessions
+        let status = 'available';
+        let sessionData = null;
+        
+        if (activeSession) {
+          // Check if session is expired to determine status
+          const endTime = new Date(activeSession.startTime).getTime() + (activeSession.duration * 60000);
+          const now = new Date().getTime();
+          
+          if (now < endTime) {
+            status = 'occupied';
+          } else {
+            status = 'waiting_pickup';
+          }
+          
+          sessionData = {
+            id: activeSession._id,
+            name: activeSession.name,
+            phoneNumber: activeSession.phoneNumber,
+            startTime: activeSession.startTime,
+            duration: activeSession.duration,
+            endTime: new Date(endTime)
+          };
+        }
+        
+        generatedMachines.push({
+          machineNumber: i,
+          name: `${randomName} ${machineOnFloor}`,
+          floor: floor,
+          location: `Floor ${floor} - Position ${machineOnFloor}`,
+          capacity: "8 kg",
+          status: status,
+          session: sessionData,
+          isActive: true
+        });
+      }
+    }
+    
+    return generatedMachines;
+  };
 
   // Fetch machine status from backend
   const fetchMachineStatus = async (showRefreshIndicator = false) => {
@@ -21,10 +92,22 @@ function App() {
       }
       
       console.log('Fetching machine status from backend...');
-      const data = await sessionAPI.getMachineStatus();
       
-      console.log('Machine status fetched successfully:', data.machines);
-      setMachines(data.machines || []);
+      // Fetch both machine status and all sessions
+      const [machineData, sessionData] = await Promise.all([
+        sessionAPI.getMachineStatus(),
+        sessionAPI.getAllSessions()
+      ]);
+      
+      console.log('Machine status fetched successfully:', machineData.machines);
+      console.log('Sessions fetched successfully:', sessionData.sessions);
+      
+      // Generate 30 machines using backend data where available
+      const allMachines = generateMachines(
+        machineData.machines || [], 
+        sessionData.sessions || []
+      );
+      setMachines(allMachines);
       setError('');
     } catch (err) {
       console.error('Failed to fetch machine status:', err);
@@ -102,7 +185,27 @@ function App() {
     fetchMachineStatus(true);
   };
 
-  const getStatusSummary = () => {
+  // Handle floor selection
+  const handleFloorSelection = (floor) => {
+    setSelectedFloor(floor);
+  };
+
+  // Filter machines by selected floor
+  const getFloorMachines = () => {
+    return machines.filter(machine => machine.floor === selectedFloor);
+  };
+
+  // Get status summary for selected floor
+  const getFloorSummary = (floor) => {
+    const floorMachines = machines.filter(m => m.floor === floor);
+    const available = floorMachines.filter(m => m.status === 'available').length;
+    const occupied = floorMachines.filter(m => m.status === 'occupied').length;
+    const waitingPickup = floorMachines.filter(m => m.status === 'waiting_pickup').length;
+    return { available, occupied, waitingPickup, total: floorMachines.length };
+  };
+
+  // Get overall status summary
+  const getOverallSummary = () => {
     const available = machines.filter(m => m.status === 'available').length;
     const occupied = machines.filter(m => m.status === 'occupied').length;
     const waitingPickup = machines.filter(m => m.status === 'waiting_pickup').length;
@@ -114,17 +217,18 @@ function App() {
       <div className="loading-container">
         <div className="loading-card">
           <div className="spinner"></div>
-          <h2 style={{fontSize: '24px', fontWeight: 'bold', color: '#2d3748', marginBottom: '12px'}}>Loading HostelHub</h2>
-          <p style={{color: '#4a5568'}}>Connecting to washing machines...</p>
+          <h2 style={{fontSize: '24px', fontWeight: 'bold', color: 'var(--color-text-primary)', marginBottom: '12px'}}>Loading HostelHub</h2>
+          <p style={{color: 'var(--color-text-secondary)'}}>Connecting to washing machines...</p>
         </div>
       </div>
     );
   }
 
-  const summary = getStatusSummary();
+  const floorMachines = getFloorMachines();
+  const overallSummary = getOverallSummary();
 
   return (
-    <div style={{minHeight: '100vh'}}>
+    <div className="app-container">
       {/* Header */}
       <header className="app-header">
         <div className="header-content">
@@ -133,33 +237,33 @@ function App() {
             <div className="logo">🏠</div>
             <div>
               <h1 className="app-title">HostelHub</h1>
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#4a5568'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--color-text-secondary)'}}>
                 <span>Washing Machine Management</span>
-                <div className="status-dot" style={{background: '#48bb78'}}></div>
-                <span style={{color: '#38a169', fontWeight: '600'}}>Live</span>
+                <div className="status-dot" style={{background: 'var(--color-success)'}}></div>
+                <span style={{color: 'var(--color-success)', fontWeight: '500'}}>Live</span>
               </div>
             </div>
           </div>
 
-          {/* Status Summary and Controls */}
-          <div style={{display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-end'}}>
+          {/* Overall Status Summary and Controls */}
+          <div style={{display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)', alignItems: 'flex-end'}}>
             {/* Status Pills */}
             <div className="status-pills">
               <div className="status-pill available">
-                <div className="status-dot" style={{background: '#38a169'}}></div>
-                Available: {summary.available}
+                <div className="status-dot"></div>
+                Available: {overallSummary.available}
               </div>
               <div className="status-pill occupied">
-                <div className="status-dot" style={{background: '#e53e3e'}}></div>
-                In Use: {summary.occupied}
+                <div className="status-dot"></div>
+                In Use: {overallSummary.occupied}
               </div>
               <div className="status-pill waiting">
-                <div className="status-dot" style={{background: '#dd6b20'}}></div>
-                Pickup: {summary.waitingPickup}
+                <div className="status-dot"></div>
+                Pickup: {overallSummary.waitingPickup}
               </div>
-              <div className="status-pill" style={{background: 'rgba(102, 126, 234, 0.1)', color: '#667eea', border: '1px solid rgba(102, 126, 234, 0.3)'}}>
-                <div className="status-dot" style={{background: '#667eea'}}></div>
-                Total: {summary.total}
+              <div className="status-pill" style={{background: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)'}}>
+                <div className="status-dot" style={{background: 'var(--color-text-primary)'}}></div>
+                Total: {overallSummary.total}
               </div>
             </div>
 
@@ -171,7 +275,7 @@ function App() {
               style={refreshing ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
             >
               <svg 
-                style={{width: '20px', height: '20px', animation: refreshing ? 'spin 1s linear infinite' : 'none'}}
+                style={{width: '16px', height: '16px', animation: refreshing ? 'spin 1s linear infinite' : 'none'}}
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -184,61 +288,98 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="main-content">
-        {/* Error Display */}
-        {error && (
-          <div className="error-card">
-            <div style={{display: 'flex', alignItems: 'flex-start', gap: '16px'}}>
-              <div>
-                <svg style={{width: '24px', height: '24px', color: '#f56565'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div style={{flex: '1'}}>
-                <h3 style={{fontSize: '18px', fontWeight: '700', color: '#991b1b', marginBottom: '8px'}}>Connection Error</h3>
-                <p style={{color: '#b91c1c', marginBottom: '16px'}}>{error}</p>
-                <button onClick={handleRefresh} className="btn btn-danger">
-                  <svg style={{width: '16px', height: '16px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Try Again
+      {/* Main Layout */}
+      <div className="main-layout">
+        {/* Sidebar */}
+        <aside className="sidebar">
+          <div className="sidebar-header">
+            <h3>Floors</h3>
+          </div>
+          <nav className="floor-nav">
+            {[1, 2, 3, 4, 5].map(floor => {
+              const floorSummary = getFloorSummary(floor);
+              return (
+                <button
+                  key={floor}
+                  onClick={() => handleFloorSelection(floor)}
+                  className={`floor-item ${selectedFloor === floor ? 'active' : ''}`}
+                >
+                  <div className="floor-info">
+                    <h4>Floor {floor}</h4>
+                    <div className="floor-stats">
+                      <span className="stat available">{floorSummary.available} free</span>
+                      <span className="stat occupied">{floorSummary.occupied} busy</span>
+                      <span className="stat waiting">{floorSummary.waitingPickup} pickup</span>
+                    </div>
+                  </div>
+                  <div className="floor-indicator">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="main-content">
+          {/* Floor Header */}
+          <div className="floor-header">
+            <h2>Floor {selectedFloor}</h2>
+            <p>{floorMachines.length} washing machines</p>
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="error-card">
+              <div style={{display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-md)'}}>
+                <div>
+                  <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div style={{flex: '1'}}>
+                  <h3 style={{fontSize: '16px', fontWeight: '600', marginBottom: 'var(--spacing-xs)'}}>Connection Error</h3>
+                  <p style={{marginBottom: 'var(--spacing-md)'}}>{error}</p>
+                  <button onClick={handleRefresh} className="btn btn-danger">
+                    <svg style={{width: '14px', height: '14px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Try Again
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Machines Grid */}
-        {machines.length === 0 ? (
-          <div style={{background: 'white', borderRadius: '20px', padding: '80px 40px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'}}>
-            <div style={{fontSize: '64px', marginBottom: '24px'}}>🧺</div>
-            <h3 style={{fontSize: '24px', fontWeight: 'bold', color: '#2d3748', marginBottom: '16px'}}>No Machines Available</h3>
-            <p style={{color: '#4a5568', maxWidth: '400px', margin: '0 auto 24px'}}>
-              No washing machines found in the system. Please check your connection or contact support.
-            </p>
-            <button onClick={handleRefresh} className="btn btn-primary">
-              Refresh Data
-            </button>
-          </div>
-        ) : (
-          <div className="machines-grid">
-            {machines.map((machine, index) => (
-              <div
-                key={machine.machineNumber}
-                style={{
-                  animation: `scaleIn 0.5s ease-out ${index * 0.1}s both`
-                }}
-              >
-                <WashingMachine
-                  machine={machine}
-                  onClick={handleMachineClick}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+          {/* Machines Grid */}
+          {floorMachines.length === 0 ? (
+            <div className="empty-state">
+              <div style={{fontSize: '48px', marginBottom: 'var(--spacing-md)'}}>🧺</div>
+              <h3>No Machines on This Floor</h3>
+              <p>There are no washing machines available on Floor {selectedFloor}.</p>
+            </div>
+          ) : (
+            <div className="machines-grid">
+              {floorMachines.map((machine, index) => (
+                <div
+                  key={machine.machineNumber}
+                  style={{
+                    animation: `fadeIn 0.3s ease-out ${index * 0.05}s both`
+                  }}
+                >
+                  <WashingMachine
+                    machine={machine}
+                    onClick={handleMachineClick}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Modal */}
       {isModalOpen && selectedMachine && (
