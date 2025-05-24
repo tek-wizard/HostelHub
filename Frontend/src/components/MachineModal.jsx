@@ -118,6 +118,44 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
         }
     };
 
+    const handlePickupClothes = async () => {
+        try {
+            console.log('Clothes picked up for session:', machine.session?.id);
+            setIsLoading(true);
+            setError('');
+
+            if (!machine.session?.id) {
+                throw new Error('No session ID found');
+            }
+
+            await onDelete(machine.session.id);
+            console.log('Clothes picked up successfully, session deleted');
+            onClose();
+        } catch (error) {
+            console.error('Error during pickup:', error);
+            setError(error.message || 'Failed to process pickup. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCallUser = () => {
+        if (machine.session?.phoneNumber) {
+            // Open phone dialer or copy phone number
+            if (navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i)) {
+                // Mobile device - open phone dialer
+                window.open(`tel:${machine.session.phoneNumber}`, '_self');
+            } else {
+                // Desktop - copy to clipboard
+                navigator.clipboard.writeText(machine.session.phoneNumber).then(() => {
+                    alert(`Phone number ${machine.session.phoneNumber} copied to clipboard!`);
+                }).catch(() => {
+                    alert(`Phone number: ${machine.session.phoneNumber}`);
+                });
+            }
+        }
+    };
+
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
             onClose();
@@ -129,6 +167,35 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
     }
 
     const isAvailable = machine.status === 'available';
+    const isWaitingPickup = machine.status === 'waiting_pickup';
+    const isOccupied = machine.status === 'occupied';
+
+    let statusColor = '#6c757d';
+    if (isAvailable) statusColor = '#28a745';
+    else if (isOccupied) statusColor = '#dc3545';
+    else if (isWaitingPickup) statusColor = '#ffc107';
+
+    const getWaitingTime = () => {
+        if (isWaitingPickup && machine.session) {
+            const endTime = new Date(machine.session.endTime);
+            const now = new Date();
+            const waitingMs = now - endTime;
+            
+            if (waitingMs > 0) {
+                const waitingMinutes = Math.floor(waitingMs / (1000 * 60));
+                const hours = Math.floor(waitingMinutes / 60);
+                const mins = waitingMinutes % 60;
+                
+                if (hours > 0) {
+                    return `${hours}h ${mins}m`;
+                }
+                return `${waitingMinutes}m`;
+            } else {
+                return 'Just finished';
+            }
+        }
+        return 'Unknown';
+    };
 
     return (
         <div 
@@ -138,112 +205,184 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                background: 'rgba(0, 0, 0, 0.5)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 1000,
-                padding: '16px'
+                padding: '20px'
             }}
             onClick={handleBackdropClick}
         >
             <div style={{
-                backgroundColor: 'white',
+                background: 'white',
                 borderRadius: '8px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-                maxWidth: '400px',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                maxWidth: '500px',
                 width: '100%',
-                maxHeight: '80vh',
-                overflowY: 'auto'
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
             }}>
-                {/* Modal Header */}
+                {/* Header */}
                 <div style={{
+                    background: statusColor,
+                    color: 'white',
+                    padding: '20px',
+                    borderRadius: '8px 8px 0 0',
                     display: 'flex',
-                    alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '24px',
-                    borderBottom: '1px solid #e5e5e5'
+                    alignItems: 'center'
                 }}>
-                    <h2 style={{
-                        fontSize: '20px',
-                        fontWeight: '600',
-                        color: '#333',
-                        margin: 0
-                    }}>
-                        Machine {machine.machineNumber}
-                    </h2>
+                    <div>
+                        <h2 style={{
+                            fontSize: '20px',
+                            fontWeight: '600',
+                            margin: '0 0 5px 0'
+                        }}>
+                            Machine {machine.machineNumber}
+                        </h2>
+                        <div style={{
+                            fontSize: '14px',
+                            opacity: 0.9
+                        }}>
+                            {isAvailable && 'Available for booking'}
+                            {isOccupied && 'Currently in use'}
+                            {isWaitingPickup && '🧺 Clothes ready for pickup'}
+                        </div>
+                    </div>
+
                     <button
                         onClick={onClose}
                         disabled={isLoading}
                         style={{
-                            background: 'none',
+                            background: 'rgba(255, 255, 255, 0.2)',
                             border: 'none',
-                            fontSize: '24px',
+                            borderRadius: '4px',
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             cursor: isLoading ? 'not-allowed' : 'pointer',
-                            color: '#999',
-                            padding: '4px'
+                            color: 'white',
+                            fontSize: '18px',
+                            fontWeight: 'bold'
                         }}
                     >
                         ×
                     </button>
                 </div>
 
-                {/* Modal Content */}
-                <div style={{ padding: '24px' }}>
-                    {/* Status Display */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <div style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '8px 16px',
-                            borderRadius: '20px',
+                {/* Content */}
+                <div style={{ padding: '20px' }}>
+                    {/* Machine Details */}
+                    <div style={{
+                        background: '#f8f9fa',
+                        padding: '15px',
+                        borderRadius: '6px',
+                        marginBottom: '20px',
+                        border: '1px solid #e9ecef'
+                    }}>
+                        <h4 style={{
+                            margin: '0 0 10px 0',
                             fontSize: '14px',
-                            fontWeight: '500',
-                            backgroundColor: isAvailable ? '#e8f5e8' : '#ffe6e6',
-                            color: isAvailable ? '#2d7d2d' : '#cc0000'
+                            color: '#666',
+                            fontWeight: '600',
+                            textTransform: 'uppercase'
                         }}>
-                            <div style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                marginRight: '8px',
-                                backgroundColor: isAvailable ? '#4CAF50' : '#F44336'
-                            }}></div>
-                            {isAvailable ? 'Available' : 'In Use'}
+                            Machine Details
+                        </h4>
+                        
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '10px'
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
+                                    Machine Number
+                                </div>
+                                <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                    {machine.machineNumber}
+                                </div>
+                            </div>
+                            
+                            {machine.name && (
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
+                                        Name
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                        {machine.name}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {machine.location && (
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
+                                        Location
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                        {machine.location}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {machine.capacity && (
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
+                                        Capacity
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                        {machine.capacity}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Error Display */}
                     {error && (
                         <div style={{
-                            marginBottom: '16px',
-                            padding: '12px',
-                            backgroundColor: '#ffe6e6',
-                            border: '1px solid #ff9999',
-                            borderRadius: '6px'
+                            background: '#f8d7da',
+                            border: '1px solid #f5c6cb',
+                            color: '#721c24',
+                            padding: '15px',
+                            borderRadius: '6px',
+                            marginBottom: '20px'
                         }}>
-                            <p style={{
+                            <div style={{
                                 fontSize: '14px',
-                                color: '#cc0000',
-                                margin: 0
+                                fontWeight: '500'
                             }}>
                                 {error}
-                            </p>
+                            </div>
                         </div>
                     )}
 
                     {isAvailable ? (
                         /* Booking Form */
                         <div>
-                            <div style={{ marginBottom: '16px' }}>
+                            <h3 style={{
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                color: '#333',
+                                marginBottom: '20px'
+                            }}>
+                                Book This Machine
+                            </h3>
+
+                            <div style={{ marginBottom: '15px' }}>
                                 <label style={{
                                     display: 'block',
                                     fontSize: '14px',
                                     fontWeight: '500',
                                     color: '#333',
-                                    marginBottom: '4px'
+                                    marginBottom: '5px'
                                 }}>
-                                    Name *
+                                    Your Name *
                                 </label>
                                 <input
                                     type="text"
@@ -251,25 +390,25 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     disabled={isLoading}
-                                    placeholder="Enter your name"
+                                    placeholder="Enter your full name"
                                     style={{
                                         width: '100%',
-                                        padding: '8px 12px',
+                                        padding: '10px',
                                         border: '1px solid #ddd',
-                                        borderRadius: '6px',
+                                        borderRadius: '4px',
                                         fontSize: '14px',
                                         boxSizing: 'border-box'
                                     }}
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '16px' }}>
+                            <div style={{ marginBottom: '15px' }}>
                                 <label style={{
                                     display: 'block',
                                     fontSize: '14px',
                                     fontWeight: '500',
                                     color: '#333',
-                                    marginBottom: '4px'
+                                    marginBottom: '5px'
                                 }}>
                                     Phone Number *
                                 </label>
@@ -282,24 +421,24 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                                     placeholder="Enter your phone number"
                                     style={{
                                         width: '100%',
-                                        padding: '8px 12px',
+                                        padding: '10px',
                                         border: '1px solid #ddd',
-                                        borderRadius: '6px',
+                                        borderRadius: '4px',
                                         fontSize: '14px',
                                         boxSizing: 'border-box'
                                     }}
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '24px' }}>
+                            <div style={{ marginBottom: '20px' }}>
                                 <label style={{
                                     display: 'block',
                                     fontSize: '14px',
                                     fontWeight: '500',
                                     color: '#333',
-                                    marginBottom: '4px'
+                                    marginBottom: '5px'
                                 }}>
-                                    Duration (minutes) *
+                                    Duration *
                                 </label>
                                 <select
                                     name="duration"
@@ -308,14 +447,15 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                                     disabled={isLoading}
                                     style={{
                                         width: '100%',
-                                        padding: '8px 12px',
+                                        padding: '10px',
                                         border: '1px solid #ddd',
-                                        borderRadius: '6px',
+                                        borderRadius: '4px',
                                         fontSize: '14px',
                                         boxSizing: 'border-box'
                                     }}
                                 >
                                     <option value="">Select duration</option>
+                                    <option value="1">1 minute (TEST)</option>
                                     <option value="30">30 minutes</option>
                                     <option value="45">45 minutes</option>
                                     <option value="60">1 hour</option>
@@ -330,11 +470,11 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                                 disabled={isLoading}
                                 style={{
                                     width: '100%',
-                                    backgroundColor: isLoading ? '#ccc' : '#4CAF50',
+                                    background: isLoading ? '#6c757d' : '#28a745',
                                     color: 'white',
                                     border: 'none',
                                     padding: '12px',
-                                    borderRadius: '6px',
+                                    borderRadius: '4px',
                                     fontSize: '16px',
                                     fontWeight: '500',
                                     cursor: isLoading ? 'not-allowed' : 'pointer'
@@ -343,36 +483,209 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                                 {isLoading ? 'Booking...' : 'Book Machine'}
                             </button>
                         </div>
-                    ) : (
-                        /* Session Info and Delete */
+                    ) : isWaitingPickup ? (
+                        /* Pickup Actions */
                         <div>
-                            <div style={{
-                                backgroundColor: '#f8f8f8',
-                                padding: '16px',
-                                borderRadius: '8px',
-                                marginBottom: '16px'
+                            <h3 style={{
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                color: '#333',
+                                marginBottom: '20px',
+                                textAlign: 'center'
                             }}>
-                                <h3 style={{
-                                    fontSize: '16px',
-                                    fontWeight: '500',
-                                    color: '#333',
-                                    margin: '0 0 12px 0'
+                                🧺 Clothes Ready for Pickup
+                            </h3>
+
+                            <div style={{
+                                background: '#fff3cd',
+                                padding: '15px',
+                                borderRadius: '6px',
+                                marginBottom: '20px',
+                                border: '2px solid #ffc107'
+                            }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '15px',
+                                    marginBottom: '15px'
                                 }}>
-                                    Current Session
-                                </h3>
-                                <div style={{ fontSize: '14px', color: '#666' }}>
-                                    <p style={{ margin: '4px 0' }}>
-                                        <strong>User:</strong> {machine.session?.name}
-                                    </p>
-                                    <p style={{ margin: '4px 0' }}>
-                                        <strong>Phone:</strong> {machine.session?.phoneNumber}
-                                    </p>
-                                    <p style={{ margin: '4px 0' }}>
-                                        <strong>Duration:</strong> {machine.session?.duration} minutes
-                                    </p>
-                                    <p style={{ margin: '4px 0' }}>
-                                        <strong>Started:</strong> {new Date(machine.session?.startTime).toLocaleString()}
-                                    </p>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
+                                            Owner
+                                        </div>
+                                        <div style={{ fontSize: '16px', color: '#333', fontWeight: '600' }}>
+                                            {machine.session?.name}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
+                                            Phone Number
+                                        </div>
+                                        <div style={{ fontSize: '16px', color: '#333', fontWeight: '600' }}>
+                                            {machine.session?.phoneNumber}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '15px'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
+                                            Finished At
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                            {new Date(machine.session?.endTime).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
+                                            Waiting Time
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#856404', fontWeight: '600' }}>
+                                            {getWaitingTime()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <button
+                                    onClick={handleCallUser}
+                                    disabled={isLoading}
+                                    style={{
+                                        background: isLoading ? '#6c757d' : '#007bff',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px',
+                                        borderRadius: '4px',
+                                        fontSize: '14px',
+                                        fontWeight: '500',
+                                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    📞 Call User
+                                </button>
+
+                                <button
+                                    onClick={handlePickupClothes}
+                                    disabled={isLoading}
+                                    style={{
+                                        background: isLoading ? '#6c757d' : '#28a745',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px',
+                                        borderRadius: '4px',
+                                        fontSize: '14px',
+                                        fontWeight: '500',
+                                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {isLoading ? 'Processing...' : '✅ Pickup Done'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Session Info and Delete for Occupied */
+                        <div>
+                            <h3 style={{
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                color: '#333',
+                                marginBottom: '20px'
+                            }}>
+                                Current Session
+                            </h3>
+
+                            <div style={{
+                                background: '#f8f9fa',
+                                padding: '15px',
+                                borderRadius: '6px',
+                                marginBottom: '20px',
+                                border: '1px solid #e9ecef'
+                            }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '15px',
+                                    marginBottom: '15px'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
+                                            User Name
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                            {machine.session?.name}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
+                                            Phone Number
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                            {machine.session?.phoneNumber}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '15px',
+                                    marginBottom: '15px'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
+                                            Duration
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                            {machine.session?.duration} minutes
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
+                                            Started At
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                                            {new Date(machine.session?.startTime).toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
+                                        Time Remaining
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: statusColor, fontWeight: '600' }}>
+                                        {(() => {
+                                            if (machine.session) {
+                                                const endTime = new Date(machine.session.endTime);
+                                                const now = new Date();
+                                                const remainingMs = endTime - now;
+                                                
+                                                if (remainingMs > 0) {
+                                                    const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
+                                                    const hours = Math.floor(remainingMinutes / 60);
+                                                    const mins = remainingMinutes % 60;
+                                                    
+                                                    if (hours > 0) {
+                                                        return `${hours}h ${mins}m remaining`;
+                                                    }
+                                                    return `${remainingMinutes}m remaining`;
+                                                } else {
+                                                    return 'Time expired';
+                                                }
+                                            }
+                                            return 'Unknown';
+                                        })()}
+                                    </div>
                                 </div>
                             </div>
 
@@ -381,17 +694,17 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                                 disabled={isLoading}
                                 style={{
                                     width: '100%',
-                                    backgroundColor: isLoading ? '#ccc' : '#F44336',
+                                    background: isLoading ? '#6c757d' : '#dc3545',
                                     color: 'white',
                                     border: 'none',
                                     padding: '12px',
-                                    borderRadius: '6px',
+                                    borderRadius: '4px',
                                     fontSize: '16px',
                                     fontWeight: '500',
                                     cursor: isLoading ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                {isLoading ? 'Deleting...' : 'End Session'}
+                                {isLoading ? 'Ending Session...' : 'End Session'}
                             </button>
                         </div>
                     )}

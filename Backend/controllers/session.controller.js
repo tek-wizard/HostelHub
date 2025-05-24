@@ -59,59 +59,122 @@ export const getMachineStatus = async (req, res) => {
     try {
         console.log('Fetching machine status...');
         
-        // For now, we'll check for 1 machine (as mentioned in requirements)
-        // This can be easily expanded for multiple machines
-        const totalMachines = 1;
+        // Mock machine data - you can replace this with actual database call later
+        const machinesData = [
+            {
+                machineNumber: 1,
+                name: "WashMax Pro 3000",
+                location: "Ground Floor - Hostel A",
+                capacity: "8 kg",
+                lastMaintenance: new Date("2024-01-15"),
+                isActive: true
+            },
+            {
+                machineNumber: 2,
+                name: "AquaClean Deluxe",
+                location: "First Floor - Hostel A",
+                capacity: "10 kg",
+                lastMaintenance: new Date("2024-01-10"),
+                isActive: true
+            },
+            {
+                machineNumber: 3,
+                name: "SpinMaster Elite",
+                location: "Ground Floor - Hostel B",
+                capacity: "7 kg",
+                lastMaintenance: new Date("2024-01-20"),
+                isActive: false
+            },
+            {
+                machineNumber: 4,
+                name: "UltraWash 2024",
+                location: "First Floor - Hostel B",
+                capacity: "9 kg",
+                lastMaintenance: new Date("2024-01-05"),
+                isActive: true
+            },
+            {
+                machineNumber: 5,
+                name: "PowerClean Max",
+                location: "Second Floor - Hostel A",
+                capacity: "8 kg",
+                lastMaintenance: new Date("2024-01-12"),
+                isActive: true
+            }
+        ];
+
         const machines = [];
 
-        for (let i = 1; i <= totalMachines; i++) {
+        for (const machineData of machinesData) {
             try {
                 // Find active session for this machine
                 const activeSession = await Session.findOne({
-                    machineNumber: i,
+                    machineNumber: machineData.machineNumber,
                     isActive: true
                 });
 
-                if (activeSession && !activeSession.isExpired()) {
-                    // Machine is occupied
-                    machines.push({
-                        machineNumber: i,
-                        status: 'occupied',
-                        session: {
-                            id: activeSession._id,
-                            name: activeSession.name,
-                            phoneNumber: activeSession.phoneNumber,
-                            startTime: activeSession.startTime,
-                            duration: activeSession.duration,
-                            endTime: new Date(activeSession.startTime.getTime() + activeSession.duration * 60000)
-                        }
-                    });
+                const baseMachineInfo = {
+                    machineNumber: machineData.machineNumber,
+                    name: machineData.name,
+                    location: machineData.location,
+                    capacity: machineData.capacity,
+                    lastMaintenance: machineData.lastMaintenance,
+                    isActive: machineData.isActive
+                };
+
+                if (activeSession) {
+                    const isExpired = activeSession.isExpired();
+                    
+                    if (!isExpired) {
+                        // Machine is still occupied (session not expired)
+                        machines.push({
+                            ...baseMachineInfo,
+                            status: 'occupied',
+                            session: {
+                                id: activeSession._id,
+                                name: activeSession.name,
+                                phoneNumber: activeSession.phoneNumber,
+                                startTime: activeSession.startTime,
+                                duration: activeSession.duration,
+                                endTime: new Date(activeSession.startTime.getTime() + activeSession.duration * 60000)
+                            }
+                        });
+                    } else {
+                        // Session expired - machine is waiting for pickup
+                        machines.push({
+                            ...baseMachineInfo,
+                            status: 'waiting_pickup',
+                            session: {
+                                id: activeSession._id,
+                                name: activeSession.name,
+                                phoneNumber: activeSession.phoneNumber,
+                                startTime: activeSession.startTime,
+                                duration: activeSession.duration,
+                                endTime: new Date(activeSession.startTime.getTime() + activeSession.duration * 60000)
+                            }
+                        });
+                        console.log(`Session ${activeSession._id} expired, machine ${machineData.machineNumber} waiting for pickup`);
+                    }
                 } else {
-                    // Machine is available
+                    // No active session - machine is available
                     machines.push({
-                        machineNumber: i,
+                        ...baseMachineInfo,
                         status: 'available',
                         session: null
                     });
-                    
-                    // If session expired, mark it as inactive
-                    if (activeSession && activeSession.isExpired()) {
-                        await Session.findByIdAndUpdate(activeSession._id, { isActive: false });
-                        console.log(`Expired session ${activeSession._id} marked as inactive`);
-                    }
                 }
             } catch (machineError) {
-                console.error(`Error checking machine ${i}:`, machineError);
+                console.error(`Error checking machine ${machineData.machineNumber}:`, machineError);
                 // In case of error, assume machine is available
                 machines.push({
-                    machineNumber: i,
+                    ...baseMachineInfo,
                     status: 'available',
                     session: null
                 });
             }
         }
 
-        console.log('Machine status fetched successfully:', machines);
+        console.log('Machine status fetched successfully:', machines.length, 'machines');
         res.status(200).json({ machines });
 
     } catch (error) {
