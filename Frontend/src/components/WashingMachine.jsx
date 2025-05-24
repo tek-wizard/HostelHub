@@ -117,13 +117,6 @@ const WashingMachine = ({ machine, onClick }) => {
             {/* Machine Details */}
             <div className="machine-details">
                 {/* Basic Info */}
-                {machine.name && (
-                    <div className="detail-row">
-                        <span className="detail-label">NAME</span>
-                        <span className="detail-value">{machine.name}</span>
-                    </div>
-                )}
-
                 {machine.location && (
                     <div className="detail-row">
                         <span className="detail-label">LOCATION</span>

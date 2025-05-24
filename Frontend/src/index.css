@@ -350,6 +350,65 @@ body {
   border-color: var(--color-text-primary);
 }
 
+/* Transparent modal inputs */
+.modal-transparent-input,
+.modal-transparent-select {
+  width: 100% !important;
+  padding: 12px 0 !important;
+  border: none !important;
+  border-bottom: 2px solid #a7f3d0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  fontSize: 16px !important;
+  color: #065f46 !important;
+  outline: none !important;
+  transition: border-color 0.3s ease !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+.modal-transparent-input:focus,
+.modal-transparent-select:focus {
+  border-bottom-color: #10b981 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.modal-transparent-input::-webkit-input-placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+.modal-transparent-input::-moz-placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+.modal-transparent-input:-ms-input-placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+.modal-transparent-input::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+.modal-transparent-select option:first-child {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+.modal-transparent-select:invalid {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
 /* Header styles - clean and minimal */
 .app-header {
   background: var(--color-bg-primary);
