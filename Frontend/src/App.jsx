@@ -11,6 +11,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFloor, setSelectedFloor] = useState(1);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Machine names to assign randomly
   const machineNames = ['Shrival', 'Prateek', 'Pratham', 'Raghavendra'];
@@ -188,6 +189,12 @@ function App() {
   // Handle floor selection
   const handleFloorSelection = (floor) => {
     setSelectedFloor(floor);
+    setIsMobileSidebarOpen(false); // Close mobile dropdown when floor is selected
+  };
+
+  // Toggle mobile sidebar
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
   };
 
   // Filter machines by selected floor
@@ -290,6 +297,51 @@ function App() {
 
       {/* Main Layout */}
       <div className="main-layout">
+        {/* Mobile Sidebar Dropdown */}
+        <div className="sidebar-mobile">
+          <div className="sidebar-mobile-header" onClick={toggleMobileSidebar}>
+            <h3>Floor {selectedFloor}</h3>
+            <svg 
+              className={`mobile-dropdown-icon ${isMobileSidebarOpen ? 'expanded' : ''}`}
+              width="20" 
+              height="20" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div className={`sidebar-mobile-content ${isMobileSidebarOpen ? '' : 'collapsed'}`}>
+            <nav className="floor-nav-mobile">
+              {[1, 2, 3, 4, 5].map(floor => {
+                const floorSummary = getFloorSummary(floor);
+                return (
+                  <button
+                    key={floor}
+                    onClick={() => handleFloorSelection(floor)}
+                    className={`floor-item ${selectedFloor === floor ? 'active' : ''}`}
+                  >
+                    <div className="floor-info">
+                      <h4>Floor {floor}</h4>
+                      <div className="floor-stats">
+                        <span className="stat available">{floorSummary.available} free</span>
+                        <span className="stat occupied">{floorSummary.occupied} busy</span>
+                        <span className="stat waiting">{floorSummary.waitingPickup} pickup</span>
+                      </div>
+                    </div>
+                    <div className="floor-indicator">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
         {/* Sidebar */}
         <aside className="sidebar">
           <div className="sidebar-header">
