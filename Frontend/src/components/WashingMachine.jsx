@@ -163,7 +163,7 @@ const WashingMachine = ({ machine, onClick }) => {
                 {machine.status === 'available' && (
                     <div className="ready-to-use">
                         ✨ Ready to Use!
-                        <div style={{fontSize: '12px', marginTop: '4px', opacity: 0.9}}>
+                        <div style={{marginTop: '4px', opacity: 0.9}}>
                             Click to book this machine
                         </div>
                     </div>

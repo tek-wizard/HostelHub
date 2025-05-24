@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors'; 
 
 import sessionRoutes from './routes/session.Routes.js';
-import connectMongoDB from './db/connectMongoDb.js';
+import connectMongoDB from './db/connectMongoDB.js';
 
 dotenv.config();
 const app = express();

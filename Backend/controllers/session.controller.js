@@ -189,9 +189,8 @@ export const getMachineStatus = async (req, res) => {
 // Get all sessions
 export const getSessions = async (req, res) => {
     try {
-        console.log('Fetching all sessions...');
+
         const sessions = await Session.find().sort({ createdAt: -1 });
-        console.log(`Found ${sessions.length} sessions`);
         res.status(200).json({ sessions });
     } catch (error) {
         console.error('Error fetching sessions:', error);
@@ -202,9 +201,7 @@ export const getSessions = async (req, res) => {
 // Get active sessions
 export const getActiveSessions = async (req, res) => {
     try {
-        console.log('Fetching active sessions...');
         const activeSessions = await Session.find({ isActive: true }).sort({ createdAt: -1 });
-        console.log(`Found ${activeSessions.length} active sessions`);
         res.status(200).json({ sessions: activeSessions });
     } catch (error) {
         console.error('Error fetching active sessions:', error);
@@ -217,16 +214,13 @@ export const getActiveSessions = async (req, res) => {
 // Delete a session 
 export const deleteSession = async (req, res) => {
     try {
-        console.log('Deleting session with ID:', req.params.id);
         const session = await Session.findById(req.params.id);
         
         if(!session){
-            console.log('Session not found for deletion');
             return res.status(404).json({ message: "Session not found" });
         }
 
         await Session.findByIdAndDelete(req.params.id);
-        console.log('Session deleted successfully');
 
         res.status(200).json({
             message: "Session deleted successfully"
