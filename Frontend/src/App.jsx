@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { sessionAPI } from './services/api';
 import WashingMachine from './components/WashingMachine';
 import MachineModal from './components/MachineModal';
-import './App.css';
 
 function App() {
   const [machines, setMachines] = useState([]);
@@ -112,32 +111,11 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#f8f9fa',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-      }}>
-        <div style={{
-          background: 'white',
-          padding: '40px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid #f3f3f3',
-            borderTop: '3px solid #007bff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
-          }}></div>
-          <h2 style={{ color: '#333', margin: '0 0 10px 0', fontSize: '20px' }}>Loading HostelHub</h2>
-          <p style={{ color: '#666', margin: 0, fontSize: '14px' }}>Fetching washing machine data...</p>
+      <div className="loading-container">
+        <div className="loading-card">
+          <div className="spinner"></div>
+          <h2 style={{fontSize: '24px', fontWeight: 'bold', color: '#2d3748', marginBottom: '12px'}}>Loading HostelHub</h2>
+          <p style={{color: '#4a5568'}}>Connecting to washing machines...</p>
         </div>
       </div>
     );
@@ -146,85 +124,41 @@ function App() {
   const summary = getStatusSummary();
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#f8f9fa',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-    }}>
+    <div style={{minHeight: '100vh'}}>
       {/* Header */}
-      <header style={{
-        background: 'white',
-        borderBottom: '1px solid #e9ecef',
-        padding: '20px 0',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <h1 style={{
-              color: '#333',
-              margin: '0 0 5px 0',
-              fontSize: '28px',
-              fontWeight: '600'
-            }}>
-              HostelHub - Washing Machine Management
-            </h1>
-            <p style={{
-              color: '#666',
-              margin: 0,
-              fontSize: '14px'
-            }}>
-              Real-time machine status and booking system
-            </p>
+      <header className="app-header">
+        <div className="header-content">
+          {/* Logo and Title Section */}
+          <div className="logo-section">
+            <div className="logo">🏠</div>
+            <div>
+              <h1 className="app-title">HostelHub</h1>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#4a5568'}}>
+                <span>Washing Machine Management</span>
+                <div className="status-dot" style={{background: '#48bb78'}}></div>
+                <span style={{color: '#38a169', fontWeight: '600'}}>Live</span>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* Status Summary */}
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <div style={{
-                background: '#d4edda',
-                color: '#155724',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}>
+          {/* Status Summary and Controls */}
+          <div style={{display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-end'}}>
+            {/* Status Pills */}
+            <div className="status-pills">
+              <div className="status-pill available">
+                <div className="status-dot" style={{background: '#38a169'}}></div>
                 Available: {summary.available}
               </div>
-              <div style={{
-                background: '#f8d7da',
-                color: '#721c24',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}>
+              <div className="status-pill occupied">
+                <div className="status-dot" style={{background: '#e53e3e'}}></div>
                 In Use: {summary.occupied}
               </div>
-              <div style={{
-                background: '#fff3cd',
-                color: '#856404',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}>
-                Waiting Pickup: {summary.waitingPickup}
+              <div className="status-pill waiting">
+                <div className="status-dot" style={{background: '#dd6b20'}}></div>
+                Pickup: {summary.waitingPickup}
               </div>
-              <div style={{
-                background: '#d1ecf1',
-                color: '#0c5460',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}>
+              <div className="status-pill" style={{background: 'rgba(102, 126, 234, 0.1)', color: '#667eea', border: '1px solid rgba(102, 126, 234, 0.3)'}}>
+                <div className="status-dot" style={{background: '#667eea'}}></div>
                 Total: {summary.total}
               </div>
             </div>
@@ -233,148 +167,88 @@ function App() {
             <button 
               onClick={handleRefresh}
               disabled={refreshing}
-              style={{
-                background: refreshing ? '#6c757d' : '#007bff',
-                color: 'white',
-                border: 'none',
-                padding: '10px 20px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: refreshing ? 'not-allowed' : 'pointer',
-                transition: 'background-color 0.2s'
-              }}
+              className={refreshing ? 'btn' : 'btn btn-primary'}
+              style={refreshing ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
             >
-              {refreshing ? 'Refreshing...' : 'Refresh'}
+              <svg 
+                style={{width: '20px', height: '20px', animation: refreshing ? 'spin 1s linear infinite' : 'none'}}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '30px 20px'
-      }}>
+      <main className="main-content">
         {/* Error Display */}
         {error && (
-          <div style={{
-            background: '#f8d7da',
-            border: '1px solid #f5c6cb',
-            color: '#721c24',
-            padding: '15px',
-            borderRadius: '4px',
-            marginBottom: '20px'
-          }}>
-            <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '5px' }}>
-              Connection Error
+          <div className="error-card">
+            <div style={{display: 'flex', alignItems: 'flex-start', gap: '16px'}}>
+              <div>
+                <svg style={{width: '24px', height: '24px', color: '#f56565'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div style={{flex: '1'}}>
+                <h3 style={{fontSize: '18px', fontWeight: '700', color: '#991b1b', marginBottom: '8px'}}>Connection Error</h3>
+                <p style={{color: '#b91c1c', marginBottom: '16px'}}>{error}</p>
+                <button onClick={handleRefresh} className="btn btn-danger">
+                  <svg style={{width: '16px', height: '16px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Try Again
+                </button>
+              </div>
             </div>
-            <div style={{ marginBottom: '10px' }}>{error}</div>
-            <button 
-              onClick={handleRefresh}
-              style={{
-                background: '#dc3545',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              Try Again
-            </button>
           </div>
         )}
 
         {/* Machines Grid */}
         {machines.length === 0 ? (
-          <div style={{
-            background: 'white',
-            padding: '60px 40px',
-            borderRadius: '8px',
-            textAlign: 'center',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #e9ecef'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🧺</div>
-            <h3 style={{ color: '#333', fontSize: '20px', marginBottom: '10px' }}>No Machines Available</h3>
-            <p style={{ color: '#666', fontSize: '14px' }}>No washing machines found in the system.</p>
+          <div style={{background: 'white', borderRadius: '20px', padding: '80px 40px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'}}>
+            <div style={{fontSize: '64px', marginBottom: '24px'}}>🧺</div>
+            <h3 style={{fontSize: '24px', fontWeight: 'bold', color: '#2d3748', marginBottom: '16px'}}>No Machines Available</h3>
+            <p style={{color: '#4a5568', maxWidth: '400px', margin: '0 auto 24px'}}>
+              No washing machines found in the system. Please check your connection or contact support.
+            </p>
+            <button onClick={handleRefresh} className="btn btn-primary">
+              Refresh Data
+            </button>
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-            gap: '20px'
-          }}>
-            {machines.map((machine) => (
-              <WashingMachine
+          <div className="machines-grid">
+            {machines.map((machine, index) => (
+              <div
                 key={machine.machineNumber}
-                machine={machine}
-                onClick={handleMachineClick}
-              />
+                style={{
+                  animation: `scaleIn 0.5s ease-out ${index * 0.1}s both`
+                }}
+              >
+                <WashingMachine
+                  machine={machine}
+                  onClick={handleMachineClick}
+                />
+              </div>
             ))}
           </div>
         )}
-
-        {/* System Info Footer */}
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '8px',
-          marginTop: '30px',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e9ecef'
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '20px',
-            textAlign: 'center'
-          }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '5px' }}>
-                System Status
-              </div>
-              <div style={{ 
-                color: error ? '#dc3545' : '#28a745', 
-                fontSize: '14px', 
-                fontWeight: '500' 
-              }}>
-                {error ? 'Offline' : 'Online'}
-              </div>
-            </div>
-            
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '5px' }}>
-                Last Updated
-              </div>
-              <div style={{ color: '#666', fontSize: '14px' }}>
-                {new Date().toLocaleTimeString()}
-              </div>
-            </div>
-            
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '5px' }}>
-                Auto Refresh
-              </div>
-              <div style={{ color: '#666', fontSize: '14px' }}>
-                Every 30 seconds
-              </div>
-            </div>
-          </div>
-        </div>
       </main>
 
       {/* Modal */}
-      <MachineModal
-        machine={selectedMachine}
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onBook={handleBookMachine}
-        onDelete={handleDeleteSession}
-      />
+      {isModalOpen && selectedMachine && (
+        <MachineModal
+          machine={selectedMachine}
+          onClose={handleModalClose}
+          onBookMachine={handleBookMachine}
+          onDeleteSession={handleDeleteSession}
+        />
+      )}
     </div>
   );
 }

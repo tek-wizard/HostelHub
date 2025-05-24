@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
+const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     const [formData, setFormData] = useState({
         name: '',
         phoneNumber: '',
@@ -11,12 +11,12 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
 
     // Reset form when modal opens/closes
     React.useEffect(() => {
-        if (isOpen) {
+        if (machine) {
             console.log('Modal opened for machine:', machine);
             setFormData({ name: '', phoneNumber: '', duration: '' });
             setError('');
         }
-    }, [isOpen, machine]);
+    }, [machine]);
 
     const handleInputChange = (e) => {
         try {
@@ -86,7 +86,7 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                 machineNumber: machine.machineNumber
             };
 
-            await onBook(sessionData);
+            await onBookMachine(sessionData);
             console.log('Machine booked successfully');
             onClose();
         } catch (error) {
@@ -107,7 +107,7 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                 throw new Error('No session ID found');
             }
 
-            await onDelete(machine.session.id);
+            await onDeleteSession(machine.session.id);
             console.log('Session deleted successfully');
             onClose();
         } catch (error) {
@@ -128,7 +128,7 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
                 throw new Error('No session ID found');
             }
 
-            await onDelete(machine.session.id);
+            await onDeleteSession(machine.session.id);
             console.log('Clothes picked up successfully, session deleted');
             onClose();
         } catch (error) {
@@ -162,7 +162,7 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
         }
     };
 
-    if (!isOpen || !machine) {
+    if (!machine) {
         return null;
     }
 
@@ -170,10 +170,30 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
     const isWaitingPickup = machine.status === 'waiting_pickup';
     const isOccupied = machine.status === 'occupied';
 
-    let statusColor = '#6c757d';
-    if (isAvailable) statusColor = '#28a745';
-    else if (isOccupied) statusColor = '#dc3545';
-    else if (isWaitingPickup) statusColor = '#ffc107';
+    const getStatusConfig = () => {
+        if (isAvailable) return {
+            bg: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+            text: 'Available for booking',
+            icon: '✨'
+        };
+        if (isOccupied) return {
+            bg: 'linear-gradient(135deg, #f56565 0%, #e53e3e 100%)',
+            text: 'Currently in use',
+            icon: '🔒'
+        };
+        if (isWaitingPickup) return {
+            bg: 'linear-gradient(135deg, #ed8936 0%, #dd6b20 100%)',
+            text: 'Clothes ready for pickup',
+            icon: '🧺'
+        };
+        return {
+            bg: 'linear-gradient(135deg, #718096 0%, #4a5568 100%)',
+            text: 'Unknown status',
+            icon: '❓'
+        };
+    };
+
+    const statusConfig = getStatusConfig();
 
     const getWaitingTime = () => {
         if (isWaitingPickup && machine.session) {
@@ -197,147 +217,99 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
         return 'Unknown';
     };
 
-    return (
-        <div 
-            style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000,
-                padding: '20px'
-            }}
-            onClick={handleBackdropClick}
-        >
-            <div style={{
-                background: 'white',
-                borderRadius: '8px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-                maxWidth: '500px',
-                width: '100%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-            }}>
-                {/* Header */}
-                <div style={{
-                    background: statusColor,
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '8px 8px 0 0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                }}>
-                    <div>
-                        <h2 style={{
-                            fontSize: '20px',
-                            fontWeight: '600',
-                            margin: '0 0 5px 0'
-                        }}>
-                            Machine {machine.machineNumber}
-                        </h2>
-                        <div style={{
-                            fontSize: '14px',
-                            opacity: 0.9
-                        }}>
-                            {isAvailable && 'Available for booking'}
-                            {isOccupied && 'Currently in use'}
-                            {isWaitingPickup && '🧺 Clothes ready for pickup'}
-                        </div>
-                    </div>
+    const getRemainingTime = () => {
+        if (isOccupied && machine.session) {
+            const endTime = new Date(machine.session.endTime);
+            const now = new Date();
+            const remainingMs = endTime - now;
+            
+            if (remainingMs > 0) {
+                const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
+                const hours = Math.floor(remainingMinutes / 60);
+                const mins = remainingMinutes % 60;
+                
+                if (hours > 0) {
+                    return `${hours}h ${mins}m remaining`;
+                }
+                return `${remainingMinutes}m remaining`;
+            } else {
+                return 'Time expired';
+            }
+        }
+        return null;
+    };
 
-                    <button
-                        onClick={onClose}
-                        disabled={isLoading}
-                        style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            width: '32px',
-                            height: '32px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: isLoading ? 'not-allowed' : 'pointer',
-                            color: 'white',
-                            fontSize: '18px',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        ×
-                    </button>
+    return (
+        <div className="modal-overlay" onClick={handleBackdropClick}>
+            <div className="modal-content">
+                {/* Header */}
+                <div className="modal-header" style={{background: statusConfig.bg}}>
+                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                            <div style={{fontSize: '32px'}}>{statusConfig.icon}</div>
+                            <div>
+                                <h2 style={{fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0'}}>Machine {machine.machineNumber}</h2>
+                                <div style={{fontSize: '14px', opacity: 0.9}}>{statusConfig.text}</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={onClose}
+                            disabled={isLoading}
+                            style={{
+                                background: 'rgba(255, 255, 255, 0.2)',
+                                backdropFilter: 'blur(8px)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                width: '40px',
+                                height: '40px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                color: 'white',
+                                fontSize: '20px',
+                                opacity: isLoading ? 0.5 : 1
+                            }}
+                        >
+                            ×
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
-                <div style={{ padding: '20px' }}>
+                <div className="modal-body">
                     {/* Machine Details */}
-                    <div style={{
-                        background: '#f8f9fa',
-                        padding: '15px',
-                        borderRadius: '6px',
-                        marginBottom: '20px',
-                        border: '1px solid #e9ecef'
-                    }}>
-                        <h4 style={{
-                            margin: '0 0 10px 0',
-                            fontSize: '14px',
-                            color: '#666',
-                            fontWeight: '600',
-                            textTransform: 'uppercase'
-                        }}>
+                    <div style={{background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)', borderRadius: '12px', padding: '20px', marginBottom: '24px', border: '1px solid #e2e8f0'}}>
+                        <h4 style={{fontSize: '16px', fontWeight: 'bold', color: '#2d3748', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            <div style={{width: '8px', height: '8px', background: '#667eea', borderRadius: '50%'}}></div>
                             Machine Details
                         </h4>
                         
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '10px'
-                        }}>
-                            <div>
-                                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
-                                    Machine Number
-                                </div>
-                                <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                    {machine.machineNumber}
-                                </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px'}}>
+                            <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
+                                <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>NUMBER</div>
+                                <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.machineNumber}</div>
                             </div>
                             
                             {machine.name && (
-                                <div>
-                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
-                                        Name
-                                    </div>
-                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                        {machine.name}
-                                    </div>
+                                <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>NAME</div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.name}</div>
                                 </div>
                             )}
                             
                             {machine.location && (
-                                <div>
-                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
-                                        Location
-                                    </div>
-                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                        {machine.location}
-                                    </div>
+                                <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>LOCATION</div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.location}</div>
                                 </div>
                             )}
                             
                             {machine.capacity && (
-                                <div>
-                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
-                                        Capacity
-                                    </div>
-                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                        {machine.capacity}
-                                    </div>
+                                <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>CAPACITY</div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.capacity}</div>
                                 </div>
                             )}
                         </div>
@@ -345,369 +317,215 @@ const MachineModal = ({ machine, isOpen, onClose, onBook, onDelete }) => {
 
                     {/* Error Display */}
                     {error && (
-                        <div style={{
-                            background: '#f8d7da',
-                            border: '1px solid #f5c6cb',
-                            color: '#721c24',
-                            padding: '15px',
-                            borderRadius: '6px',
-                            marginBottom: '20px'
-                        }}>
-                            <div style={{
-                                fontSize: '14px',
-                                fontWeight: '500'
-                            }}>
-                                {error}
+                        <div style={{background: 'rgba(245, 101, 101, 0.1)', border: '2px solid rgba(245, 101, 101, 0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px'}}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                <svg style={{width: '20px', height: '20px', color: '#f56565', flexShrink: 0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                    <h4 style={{fontWeight: '600', color: '#991b1b', margin: '0 0 4px 0'}}>Error</h4>
+                                    <p style={{color: '#b91c1c', margin: 0}}>{error}</p>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    {isAvailable ? (
-                        /* Booking Form */
-                        <div>
-                            <h3 style={{
-                                fontSize: '16px',
-                                fontWeight: '600',
-                                color: '#333',
-                                marginBottom: '20px'
-                            }}>
-                                Book This Machine
-                            </h3>
+                    {/* Current Session Information */}
+                    {machine.session && (
+                        <div className="session-info" style={{marginBottom: '24px'}}>
+                            <h4 className="session-title">Active Session</h4>
+                            
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '12px'}}>
+                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>User</div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>{machine.session.name || machine.session.userName}</div>
+                                </div>
+                                
+                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>Phone</div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>{machine.session.phoneNumber}</div>
+                                </div>
+                            </div>
 
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    color: '#333',
-                                    marginBottom: '5px'
-                                }}>
-                                    Your Name *
-                                </label>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '12px'}}>
+                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>Duration</div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>{machine.session.duration} minutes</div>
+                                </div>
+                                
+                                <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>
+                                        {isWaitingPickup ? 'Waiting Time' : 'Time Left'}
+                                    </div>
+                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: isWaitingPickup ? '#d97706' : getRemainingTime()?.includes('expired') ? '#dc2626' : '#059669'}}>
+                                        {isWaitingPickup ? getWaitingTime() : getRemainingTime()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', padding: '12px'}}>
+                                <div style={{fontSize: '12px', fontWeight: '600', color: '#2b6cb0', marginBottom: '4px'}}>Started At</div>
+                                <div style={{fontSize: '14px', fontWeight: 'bold', color: '#1e40af'}}>
+                                    {new Date(machine.session.startTime).toLocaleString()}
+                                </div>
+                            </div>
+
+                            {isWaitingPickup && (
+                                <div style={{background: '#fed7aa', border: '1px solid #f59e0b', borderRadius: '8px', padding: '12px', textAlign: 'center', marginTop: '12px'}}>
+                                    <div style={{color: '#92400e', fontWeight: 'bold', fontSize: '14px'}}>
+                                        🧺 Clothes ready for pickup!
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Available - Booking Form */}
+                    {isAvailable && (
+                        <div style={{background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', borderRadius: '12px', padding: '20px', border: '1px solid #a7f3d0', marginBottom: '24px'}}>
+                            <h4 style={{fontSize: '16px', fontWeight: 'bold', color: '#065f46', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                <span style={{fontSize: '20px'}}>✨</span>
+                                Book This Machine
+                            </h4>
+                            
+                            <div className="form-group">
+                                <label className="form-label">Your Name</label>
                                 <input
                                     type="text"
                                     name="name"
                                     value={formData.name}
                                     onChange={handleInputChange}
-                                    disabled={isLoading}
+                                    className="form-input"
                                     placeholder="Enter your full name"
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '4px',
-                                        fontSize: '14px',
-                                        boxSizing: 'border-box'
-                                    }}
+                                    disabled={isLoading}
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    color: '#333',
-                                    marginBottom: '5px'
-                                }}>
-                                    Phone Number *
-                                </label>
+                            <div className="form-group">
+                                <label className="form-label">Phone Number</label>
                                 <input
                                     type="tel"
                                     name="phoneNumber"
                                     value={formData.phoneNumber}
                                     onChange={handleInputChange}
+                                    className="form-input"
+                                    placeholder="Enter 10-digit phone number"
                                     disabled={isLoading}
-                                    placeholder="Enter your phone number"
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '4px',
-                                        fontSize: '14px',
-                                        boxSizing: 'border-box'
-                                    }}
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    color: '#333',
-                                    marginBottom: '5px'
-                                }}>
-                                    Duration *
-                                </label>
+                            <div className="form-group">
+                                <label className="form-label">Duration (minutes)</label>
                                 <select
                                     name="duration"
                                     value={formData.duration}
                                     onChange={handleInputChange}
+                                    className="form-select"
                                     disabled={isLoading}
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '4px',
-                                        fontSize: '14px',
-                                        boxSizing: 'border-box'
-                                    }}
                                 >
                                     <option value="">Select duration</option>
-                                    <option value="1">1 minute (TEST)</option>
+                                    <option value="1">1 minute (Testing)</option>
                                     <option value="30">30 minutes</option>
                                     <option value="45">45 minutes</option>
                                     <option value="60">1 hour</option>
                                     <option value="90">1.5 hours</option>
                                     <option value="120">2 hours</option>
-                                    <option value="180">3 hours</option>
                                 </select>
                             </div>
+                        </div>
+                    )}
 
+                    {/* Action Buttons */}
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                        {isAvailable && (
                             <button
                                 onClick={handleBookMachine}
                                 disabled={isLoading}
-                                style={{
-                                    width: '100%',
-                                    background: isLoading ? '#6c757d' : '#28a745',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '12px',
-                                    borderRadius: '4px',
-                                    fontSize: '16px',
-                                    fontWeight: '500',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer'
-                                }}
+                                className={`btn ${isLoading ? '' : 'btn-success'}`}
+                                style={isLoading ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
                             >
-                                {isLoading ? 'Booking...' : 'Book Machine'}
+                                {isLoading ? (
+                                    <>
+                                        <div className="spinner" style={{width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderLeftColor: 'white'}}></div>
+                                        <span>Booking...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>Book Machine</span>
+                                    </>
+                                )}
                             </button>
-                        </div>
-                    ) : isWaitingPickup ? (
-                        /* Pickup Actions */
-                        <div>
-                            <h3 style={{
-                                fontSize: '16px',
-                                fontWeight: '600',
-                                color: '#333',
-                                marginBottom: '20px',
-                                textAlign: 'center'
-                            }}>
-                                🧺 Clothes Ready for Pickup
-                            </h3>
+                        )}
 
-                            <div style={{
-                                background: '#fff3cd',
-                                padding: '15px',
-                                borderRadius: '6px',
-                                marginBottom: '20px',
-                                border: '2px solid #ffc107'
-                            }}>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: '15px',
-                                    marginBottom: '15px'
-                                }}>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
-                                            Owner
-                                        </div>
-                                        <div style={{ fontSize: '16px', color: '#333', fontWeight: '600' }}>
-                                            {machine.session?.name}
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
-                                            Phone Number
-                                        </div>
-                                        <div style={{ fontSize: '16px', color: '#333', fontWeight: '600' }}>
-                                            {machine.session?.phoneNumber}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: '15px'
-                                }}>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
-                                            Finished At
-                                        </div>
-                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                            {new Date(machine.session?.endTime).toLocaleString()}
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#856404', marginBottom: '5px' }}>
-                                            Waiting Time
-                                        </div>
-                                        <div style={{ fontSize: '14px', color: '#856404', fontWeight: '600' }}>
-                                            {getWaitingTime()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        {isOccupied && (
+                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                                <button onClick={handleCallUser} className="btn btn-primary">
+                                    <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                    <span>Call User</span>
+                                </button>
+                                
                                 <button
-                                    onClick={handleCallUser}
+                                    onClick={handleDeleteSession}
                                     disabled={isLoading}
-                                    style={{
-                                        background: isLoading ? '#6c757d' : '#007bff',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px',
-                                        borderRadius: '4px',
-                                        fontSize: '14px',
-                                        fontWeight: '500',
-                                        cursor: isLoading ? 'not-allowed' : 'pointer'
-                                    }}
+                                    className={`btn ${isLoading ? '' : 'btn-danger'}`}
+                                    style={isLoading ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
                                 >
-                                    📞 Call User
+                                    {isLoading ? (
+                                        <>
+                                            <div className="spinner" style={{width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderLeftColor: 'white'}}></div>
+                                            <span>Ending...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            <span>End Session</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {isWaitingPickup && (
+                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                                <button onClick={handleCallUser} className="btn btn-warning">
+                                    <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                    <span>Call User</span>
                                 </button>
 
                                 <button
                                     onClick={handlePickupClothes}
                                     disabled={isLoading}
-                                    style={{
-                                        background: isLoading ? '#6c757d' : '#28a745',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px',
-                                        borderRadius: '4px',
-                                        fontSize: '14px',
-                                        fontWeight: '500',
-                                        cursor: isLoading ? 'not-allowed' : 'pointer'
-                                    }}
+                                    className={`btn ${isLoading ? '' : 'btn-success'}`}
+                                    style={isLoading ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
                                 >
-                                    {isLoading ? 'Processing...' : '✅ Pickup Done'}
+                                    {isLoading ? (
+                                        <>
+                                            <div className="spinner" style={{width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderLeftColor: 'white'}}></div>
+                                            <span>Processing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span style={{fontSize: '18px'}}>🧺</span>
+                                            <span>Picked Up</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
-                        </div>
-                    ) : (
-                        /* Session Info and Delete for Occupied */
-                        <div>
-                            <h3 style={{
-                                fontSize: '16px',
-                                fontWeight: '600',
-                                color: '#333',
-                                marginBottom: '20px'
-                            }}>
-                                Current Session
-                            </h3>
+                        )}
 
-                            <div style={{
-                                background: '#f8f9fa',
-                                padding: '15px',
-                                borderRadius: '6px',
-                                marginBottom: '20px',
-                                border: '1px solid #e9ecef'
-                            }}>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: '15px',
-                                    marginBottom: '15px'
-                                }}>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
-                                            User Name
-                                        </div>
-                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                            {machine.session?.name}
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
-                                            Phone Number
-                                        </div>
-                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                            {machine.session?.phoneNumber}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: '15px',
-                                    marginBottom: '15px'
-                                }}>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
-                                            Duration
-                                        </div>
-                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                            {machine.session?.duration} minutes
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
-                                            Started At
-                                        </div>
-                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-                                            {new Date(machine.session?.startTime).toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
-                                        Time Remaining
-                                    </div>
-                                    <div style={{ fontSize: '14px', color: statusColor, fontWeight: '600' }}>
-                                        {(() => {
-                                            if (machine.session) {
-                                                const endTime = new Date(machine.session.endTime);
-                                                const now = new Date();
-                                                const remainingMs = endTime - now;
-                                                
-                                                if (remainingMs > 0) {
-                                                    const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
-                                                    const hours = Math.floor(remainingMinutes / 60);
-                                                    const mins = remainingMinutes % 60;
-                                                    
-                                                    if (hours > 0) {
-                                                        return `${hours}h ${mins}m remaining`;
-                                                    }
-                                                    return `${remainingMinutes}m remaining`;
-                                                } else {
-                                                    return 'Time expired';
-                                                }
-                                            }
-                                            return 'Unknown';
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleDeleteSession}
-                                disabled={isLoading}
-                                style={{
-                                    width: '100%',
-                                    background: isLoading ? '#6c757d' : '#dc3545',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '12px',
-                                    borderRadius: '4px',
-                                    fontSize: '16px',
-                                    fontWeight: '500',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                {isLoading ? 'Ending Session...' : 'End Session'}
-                            </button>
-                        </div>
-                    )}
+                        <button onClick={onClose} className="btn" style={{background: '#e2e8f0', color: '#4a5568'}}>
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
