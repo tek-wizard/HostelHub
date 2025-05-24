@@ -244,36 +244,12 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
             <div className="modal-content">
                 {/* Header */}
                 <div className="modal-header" style={{background: statusConfig.bg}}>
-                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                            <div style={{fontSize: '32px'}}>{statusConfig.icon}</div>
-                            <div>
-                                <h2 style={{fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0'}}>Machine {machine.machineNumber}</h2>
-                                <div style={{fontSize: '14px', opacity: 0.9}}>{statusConfig.text}</div>
-                            </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+                        <div style={{fontSize: '32px'}}>{statusConfig.icon}</div>
+                        <div>
+                            <h2 style={{fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0'}}>Machine {machine.machineNumber}</h2>
+                            <div style={{fontSize: '14px', opacity: 0.9}}>{statusConfig.text}</div>
                         </div>
-
-                        <button
-                            onClick={onClose}
-                            disabled={isLoading}
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.2)',
-                                backdropFilter: 'blur(8px)',
-                                border: 'none',
-                                borderRadius: '12px',
-                                width: '40px',
-                                height: '40px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: isLoading ? 'not-allowed' : 'pointer',
-                                color: 'white',
-                                fontSize: '20px',
-                                opacity: isLoading ? 0.5 : 1
-                            }}
-                        >
-                            ×
-                        </button>
                     </div>
                 </div>
 
@@ -292,24 +268,10 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.machineNumber}</div>
                             </div>
                             
-                            {machine.name && (
-                                <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
-                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>NAME</div>
-                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.name}</div>
-                                </div>
-                            )}
-                            
                             {machine.location && (
                                 <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
                                     <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>LOCATION</div>
                                     <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.location}</div>
-                                </div>
-                            )}
-                            
-                            {machine.capacity && (
-                                <div style={{background: 'white', borderRadius: '8px', padding: '12px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'}}>
-                                    <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>CAPACITY</div>
-                                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.capacity}</div>
                                 </div>
                             )}
                         </div>
@@ -382,48 +344,51 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
                     {/* Available - Booking Form */}
                     {isAvailable && (
-                        <div style={{background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', borderRadius: '12px', padding: '20px', border: '1px solid #a7f3d0', marginBottom: '24px'}}>
-                            <h4 style={{fontSize: '16px', fontWeight: 'bold', color: '#065f46', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                <span style={{fontSize: '20px'}}>✨</span>
+                        <div style={{background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', borderRadius: '16px', padding: '24px', border: '1px solid #a7f3d0', marginBottom: '24px'}}>
+                            <h4 style={{fontSize: '18px', fontWeight: 'bold', color: '#065f46', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                <span style={{fontSize: '22px'}}>✨</span>
                                 Book This Machine
                             </h4>
-                            
-                            <div className="form-group">
-                                <label className="form-label">Your Name</label>
+
+                            <div style={{marginBottom: '20px'}}>
+                                <label style={{display: 'block', fontSize: '14px', fontWeight: '600', color: '#047857', marginBottom: '8px'}}>Your Name</label>
                                 <input
                                     type="text"
                                     name="name"
                                     value={formData.name}
                                     onChange={handleInputChange}
-                                    className="form-input"
                                     placeholder="Enter your full name"
                                     disabled={isLoading}
+                                    autoComplete="off"
+                                    className="modal-transparent-input"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">Phone Number</label>
+                            <div style={{marginBottom: '20px'}}>
+                                <label style={{display: 'block', fontSize: '14px', fontWeight: '600', color: '#047857', marginBottom: '8px'}}>Phone Number</label>
                                 <input
                                     type="tel"
                                     name="phoneNumber"
                                     value={formData.phoneNumber}
                                     onChange={handleInputChange}
-                                    className="form-input"
                                     placeholder="Enter 10-digit phone number"
                                     disabled={isLoading}
+                                    autoComplete="off"
+                                    className="modal-transparent-input"
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">Duration (minutes)</label>
+                            <div style={{marginBottom: '24px'}}>
+                                <label style={{display: 'block', fontSize: '14px', fontWeight: '600', color: '#047857', marginBottom: '8px'}}>Duration (minutes)</label>
                                 <select
                                     name="duration"
                                     value={formData.duration}
                                     onChange={handleInputChange}
-                                    className="form-select"
                                     disabled={isLoading}
+                                    className="modal-transparent-select"
+                                    required
                                 >
-                                    <option value="">Select duration</option>
+                                    <option value="" disabled>Select duration</option>
                                     <option value="1">1 minute (Testing)</option>
                                     <option value="30">30 minutes</option>
                                     <option value="45">45 minutes</option>
@@ -432,34 +397,55 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                     <option value="120">2 hours</option>
                                 </select>
                             </div>
+
+                            {/* Enhanced Book Button */}
+                            <button
+                                onClick={handleBookMachine}
+                                disabled={isLoading}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px 24px',
+                                    background: isLoading ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    fontFamily: 'Inter, sans-serif',
+                                    opacity: isLoading ? 0.7 : 1
+                                }}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <div style={{
+                                            width: '20px', 
+                                            height: '20px', 
+                                            border: '2px solid rgba(255, 255, 255, 0.3)', 
+                                            borderLeftColor: 'white',
+                                            borderRadius: '50%',
+                                            animation: 'spin 1s linear infinite'
+                                        }}></div>
+                                        <span>Booking...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg style={{width: '22px', height: '22px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>Book</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
                     )}
 
                     {/* Action Buttons */}
                     <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                        {isAvailable && (
-                            <button
-                                onClick={handleBookMachine}
-                                disabled={isLoading}
-                                className={`btn ${isLoading ? '' : 'btn-success'}`}
-                                style={isLoading ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <div className="spinner" style={{width: '20px', height: '20px', border: '2px solid rgba(255, 255, 255, 0.3)', borderLeftColor: 'white'}}></div>
-                                        <span>Booking...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg style={{width: '20px', height: '20px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span>Book Machine</span>
-                                    </>
-                                )}
-                            </button>
-                        )}
-
                         {isOccupied && (
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
                                 <button onClick={handleCallUser} className="btn btn-primary">
@@ -521,10 +507,6 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 </button>
                             </div>
                         )}
-
-                        <button onClick={onClose} className="btn" style={{background: '#e2e8f0', color: '#4a5568'}}>
-                            Close
-                        </button>
                     </div>
                 </div>
             </div>

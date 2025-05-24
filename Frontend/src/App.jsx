@@ -13,17 +13,13 @@ function App() {
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Machine names to assign randomly
-  const machineNames = ['Shrival', 'Prateek', 'Pratham', 'Raghavendra'];
-
-  // Generate 30 machines with names and floor assignments
+  // Generate 30 machines with floor assignments
   const generateMachines = (backendMachines, allSessions = []) => {
     const generatedMachines = [];
     
     for (let i = 1; i <= 30; i++) {
       const floor = Math.ceil(i / 6); // 6 machines per floor
       const machineOnFloor = ((i - 1) % 6) + 1;
-      const randomName = machineNames[Math.floor(Math.random() * machineNames.length)];
       
       // Check if we have backend data for this machine number
       const backendMachine = backendMachines.find(m => m.machineNumber === i);
@@ -37,7 +33,6 @@ function App() {
         // Use backend data if available (machines 1-5 typically)
         generatedMachines.push({
           ...backendMachine,
-          name: `${randomName} ${machineOnFloor}`,
           floor: floor,
           location: `Floor ${floor} - Position ${machineOnFloor}`
         });
@@ -69,10 +64,8 @@ function App() {
         
         generatedMachines.push({
           machineNumber: i,
-          name: `${randomName} ${machineOnFloor}`,
           floor: floor,
           location: `Floor ${floor} - Position ${machineOnFloor}`,
-          capacity: "8 kg",
           status: status,
           session: sessionData,
           isActive: true
