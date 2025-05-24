@@ -23,7 +23,7 @@ const startServer = async () => {
     try {
         await connectMongoDB();
         app.listen(PORT, () => {
-            // Server started successfully
+            console.log(`🚀 Server running on http://localhost:${PORT}`);
         });
     } catch (error) {
         process.exit(1);
