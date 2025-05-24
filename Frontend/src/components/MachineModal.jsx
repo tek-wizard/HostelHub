@@ -12,7 +12,6 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     // Reset form when modal opens/closes
     React.useEffect(() => {
         if (machine) {
-            console.log('Modal opened for machine:', machine);
             setFormData({ name: '', phoneNumber: '', duration: '' });
             setError('');
             // Prevent body scroll when modal opens
@@ -26,78 +25,65 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     }, [machine]);
 
     const handleInputChange = (e) => {
-        try {
-            const { name, value } = e.target;
-            console.log(`Form input changed: ${name} = ${value}`);
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-            
-            // Clear error when user starts typing
-            if (error) {
-                setError('');
-            }
-        } catch (error) {
-            console.error('Error handling input change:', error);
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        
+        // Clear error when user starts typing
+        if (error) {
+            setError('');
         }
     };
 
     const validateForm = () => {
-        try {
-            const errors = [];
-            
-            if (!formData.name.trim()) {
-                errors.push('Name is required');
-            }
-            
-            if (!formData.phoneNumber.trim()) {
-                errors.push('Phone number is required');
-            } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
-                errors.push('Please enter a valid 10-digit phone number');
-            }
-            
-            if (!formData.duration) {
-                errors.push('Duration is required');
-            } else {
-                const duration = parseInt(formData.duration);
-                if (isNaN(duration) || duration < 1 || duration > 180) {
-                    errors.push('Duration must be between 1 and 180 minutes');
-                }
-            }
-
-            return errors;
-        } catch (error) {
-            console.error('Error validating form:', error);
-            return ['Form validation error'];
+        const errors = [];
+        
+        if (!formData.name.trim()) {
+            errors.push('Name is required');
         }
+        
+        if (!formData.phoneNumber.trim()) {
+            errors.push('Phone number is required');
+        } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
+            errors.push('Please enter a valid 10-digit phone number');
+        }
+        
+        if (!formData.duration) {
+            errors.push('Duration is required');
+        } else {
+            const duration = parseInt(formData.duration);
+            if (isNaN(duration) || duration < 1 || duration > 180) {
+                errors.push('Duration must be between 1 and 180 minutes');
+            }
+        }
+
+        return errors;
     };
 
     const handleBookMachine = async () => {
+        setIsLoading(true);
+        setError('');
+
+        const validationErrors = validateForm();
+        if (validationErrors.length > 0) {
+            setError(validationErrors.join(', '));
+            setIsLoading(false);
+            return;
+        }
+
+        const sessionData = {
+            name: formData.name.trim(),
+            phoneNumber: formData.phoneNumber.trim(),
+            duration: parseInt(formData.duration),
+            machineNumber: machine.machineNumber
+        };
+
         try {
-            console.log('Attempting to book machine with data:', formData);
-            setIsLoading(true);
-            setError('');
-
-            const validationErrors = validateForm();
-            if (validationErrors.length > 0) {
-                setError(validationErrors.join(', '));
-                setIsLoading(false);
-                return;
-            }
-
-            const sessionData = {
-                name: formData.name.trim(),
-                phoneNumber: formData.phoneNumber.trim(),
-                duration: parseInt(formData.duration),
-                machineNumber: machine.machineNumber
-            };
-
             await onBookMachine(sessionData);
-            console.log('Machine booked successfully');
             handleClose();
         } catch (error) {
-            console.error('Error booking machine:', error);
             setError(error.message || 'Failed to book machine. Please try again.');
         } finally {
             setIsLoading(false);
@@ -105,20 +91,19 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     };
 
     const handleDeleteSession = async () => {
+        setIsLoading(true);
+        setError('');
+
+        if (!machine.session?.id) {
+            setError('No session ID found');
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            console.log('Attempting to delete session:', machine.session?.id);
-            setIsLoading(true);
-            setError('');
-
-            if (!machine.session?.id) {
-                throw new Error('No session ID found');
-            }
-
             await onDeleteSession(machine.session.id);
-            console.log('Session deleted successfully');
             handleClose();
         } catch (error) {
-            console.error('Error deleting session:', error);
             setError(error.message || 'Failed to delete session. Please try again.');
         } finally {
             setIsLoading(false);
@@ -126,20 +111,19 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     };
 
     const handlePickupClothes = async () => {
+        setIsLoading(true);
+        setError('');
+
+        if (!machine.session?.id) {
+            setError('No session ID found');
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            console.log('Clothes picked up for session:', machine.session?.id);
-            setIsLoading(true);
-            setError('');
-
-            if (!machine.session?.id) {
-                throw new Error('No session ID found');
-            }
-
             await onDeleteSession(machine.session.id);
-            console.log('Clothes picked up successfully, session deleted');
             handleClose();
         } catch (error) {
-            console.error('Error during pickup:', error);
             setError(error.message || 'Failed to process pickup. Please try again.');
         } finally {
             setIsLoading(false);

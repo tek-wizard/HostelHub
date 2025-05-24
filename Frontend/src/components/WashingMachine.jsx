@@ -2,90 +2,69 @@ import React from 'react';
 
 const WashingMachine = ({ machine, onClick }) => {
     const handleClick = () => {
-        try {
-            console.log(`Machine ${machine.machineNumber} clicked, status: ${machine.status}`);
-            if (onClick) {
-                onClick(machine);
-            }
-        } catch (error) {
-            console.error('Error handling machine click:', error);
+        if (onClick) {
+            onClick(machine);
         }
     };
 
     const getStatusText = () => {
-        try {
-            switch (machine.status) {
-                case 'available':
-                    return 'AVAILABLE';
-                case 'occupied':
-                    return 'IN USE';
-                case 'waiting_pickup':
-                    return 'WAITING PICKUP';
-                default:
-                    return 'UNKNOWN';
-            }
-        } catch (error) {
-            console.error('Error determining status text:', error);
-            return 'ERROR';
+        switch (machine.status) {
+            case 'available':
+                return 'AVAILABLE';
+            case 'occupied':
+                return 'IN USE';
+            case 'waiting_pickup':
+                return 'WAITING PICKUP';
+            default:
+                return 'UNKNOWN';
         }
     };
 
     const getRemainingTime = () => {
-        try {
-            if (machine.status === 'occupied' && machine.session) {
-                const endTime = new Date(machine.session.endTime);
-                const now = new Date();
-                const remainingMs = endTime - now;
+        if (machine.status === 'occupied' && machine.session) {
+            const endTime = new Date(machine.session.endTime);
+            const now = new Date();
+            const remainingMs = endTime - now;
+            
+            if (remainingMs > 0) {
+                const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
+                const hours = Math.floor(remainingMinutes / 60);
+                const mins = remainingMinutes % 60;
                 
-                if (remainingMs > 0) {
-                    const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
-                    const hours = Math.floor(remainingMinutes / 60);
-                    const mins = remainingMinutes % 60;
-                    
-                    if (hours > 0) {
-                        return `${hours}h ${mins}m remaining`;
-                    }
-                    return `${remainingMinutes}m remaining`;
-                } else {
-                    return 'Time expired';
+                if (hours > 0) {
+                    return `${hours}h ${mins}m remaining`;
                 }
+                return `${remainingMinutes}m remaining`;
+            } else {
+                return 'Time expired';
             }
-            return null;
-        } catch (error) {
-            console.error('Error calculating remaining time:', error);
-            return 'Time error';
         }
+        return null;
     };
 
     const getWaitingTime = () => {
-        try {
-            if (machine.status === 'waiting_pickup' && machine.session) {
-                const endTime = new Date(machine.session.endTime);
-                const now = new Date();
-                const waitingMs = now - endTime;
+        if (machine.status === 'waiting_pickup' && machine.session) {
+            const endTime = new Date(machine.session.endTime);
+            const now = new Date();
+            const waitingMs = now - endTime;
+            
+            if (waitingMs > 0) {
+                const waitingMinutes = Math.floor(waitingMs / (1000 * 60));
+                const hours = Math.floor(waitingMinutes / 60);
+                const mins = waitingMinutes % 60;
                 
-                if (waitingMs > 0) {
-                    const waitingMinutes = Math.floor(waitingMs / (1000 * 60));
-                    const hours = Math.floor(waitingMinutes / 60);
-                    const mins = waitingMinutes % 60;
-                    
-                    if (hours > 0) {
-                        return `Waiting ${hours}h ${mins}m`;
-                    }
-                    return `Waiting ${waitingMinutes}m`;
-                } else {
-                    return 'Just finished';
+                if (hours > 0) {
+                    return `Waiting ${hours}h ${mins}m`;
                 }
+                return `Waiting ${waitingMinutes}m`;
+            } else {
+                return 'Just finished';
             }
-            return null;
-        } catch (error) {
-            console.error('Error calculating waiting time:', error);
-            return 'Time error';
         }
+        return null;
     };
 
     if (!machine) {
-        console.error('WashingMachine component received null or undefined machine prop');
         return (
             <div className="washing-machine-card" style={{backgroundColor: '#fef2f2', border: '2px dashed #f87171'}}>
                 <div style={{textAlign: 'center', color: '#dc2626'}}>

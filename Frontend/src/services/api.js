@@ -9,91 +9,32 @@ const api = axios.create({
     }
 });
 
-// Request interceptor for logging
+// Request interceptor for authentication (if needed in future)
 api.interceptors.request.use(
-    (config) => {
-        console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data);
-        return config;
-    },
-    (error) => {
-        console.error('❌ API Request Error:', error);
-        return Promise.reject(error);
-    }
+    (config) => config,
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor for logging and error handling
+// Response interceptor for common error handling
 api.interceptors.response.use(
-    (response) => {
-        console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
-        return response;
-    },
+    (response) => response,
     (error) => {
-        console.error('❌ API Response Error:', {
-            message: error.message,
-            status: error.response?.status,
-            data: error.response?.data,
-            url: error.config?.url
-        });
-        return Promise.reject(error);
+        const message = error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(new Error(message));
     }
 );
 
 // API functions
 export const sessionAPI = {
-    // Get machine status
-    getMachineStatus: async () => {
-        try {
-            const response = await api.get('/sessions/machine-status');
-            return response.data;
-        } catch (error) {
-            console.error('Failed to fetch machine status:', error);
-            throw new Error(error.response?.data?.message || 'Failed to fetch machine status');
-        }
-    },
-
-    // Create new session
-    createSession: async (sessionData) => {
-        try {
-            const response = await api.post('/sessions/create', sessionData);
-            return response.data;
-        } catch (error) {
-            console.error('Failed to create session:', error);
-            throw new Error(error.response?.data?.message || 'Failed to create session');
-        }
-    },
-
-    // Delete session
-    deleteSession: async (sessionId) => {
-        try {
-            const response = await api.delete(`/sessions/${sessionId}`);
-            return response.data;
-        } catch (error) {
-            console.error('Failed to delete session:', error);
-            throw new Error(error.response?.data?.message || 'Failed to delete session');
-        }
-    },
-
-    // Get all sessions
-    getAllSessions: async () => {
-        try {
-            const response = await api.get('/sessions/all');
-            return response.data;
-        } catch (error) {
-            console.error('Failed to fetch all sessions:', error);
-            throw new Error(error.response?.data?.message || 'Failed to fetch sessions');
-        }
-    },
-
-    // Get active sessions
-    getActiveSessions: async () => {
-        try {
-            const response = await api.get('/sessions/active');
-            return response.data;
-        } catch (error) {
-            console.error('Failed to fetch active sessions:', error);
-            throw new Error(error.response?.data?.message || 'Failed to fetch active sessions');
-        }
-    }
+    getMachineStatus: () => api.get('/sessions/machine-status'),
+    
+    createSession: (sessionData) => api.post('/sessions/create', sessionData),
+    
+    deleteSession: (sessionId) => api.delete(`/sessions/${sessionId}`),
+    
+    getAllSessions: () => api.get('/sessions/all'),
+    
+    getActiveSessions: () => api.get('/sessions/active')
 };
 
 export default api; 

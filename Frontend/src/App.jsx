@@ -87,26 +87,20 @@ function App() {
         setLoading(true);
       }
       
-      console.log('Fetching machine status from backend...');
-      
       // Fetch both machine status and all sessions
-      const [machineData, sessionData] = await Promise.all([
+      const [machineResponse, sessionResponse] = await Promise.all([
         sessionAPI.getMachineStatus(),
         sessionAPI.getAllSessions()
       ]);
       
-      console.log('Machine status fetched successfully:', machineData.machines);
-      console.log('Sessions fetched successfully:', sessionData.sessions);
-      
       // Generate 30 machines using backend data where available
       const allMachines = generateMachines(
-        machineData.machines || [], 
-        sessionData.sessions || []
+        machineResponse.data?.machines || [], 
+        sessionResponse.data?.sessions || []
       );
       setMachines(allMachines);
       setError('');
     } catch (err) {
-      console.error('Failed to fetch machine status:', err);
       setError(`Failed to load machine status: ${err.message}`);
     } finally {
       setLoading(false);
@@ -116,7 +110,6 @@ function App() {
 
   // Initial data fetch
   useEffect(() => {
-    console.log('App component mounted, fetching initial data...');
     fetchMachineStatus();
     
     // Auto-refresh every 30 seconds
@@ -129,43 +122,23 @@ function App() {
 
   // Handle machine click
   const handleMachineClick = (machine) => {
-    try {
-      console.log('Machine clicked:', machine);
-      setSelectedMachine(machine);
-      setIsModalOpen(true);
-    } catch (err) {
-      console.error('Error handling machine click:', err);
-      setError('Error opening machine details');
-    }
+    setSelectedMachine(machine);
+    setIsModalOpen(true);
   };
 
   // Handle booking a machine
   const handleBookMachine = async (sessionData) => {
-    try {
-      console.log('Booking machine with data:', sessionData);
-      await sessionAPI.createSession(sessionData);
-      console.log('Machine booked successfully, refreshing data...');
-      
-      // Refresh machine status after booking
+    const response = await sessionAPI.createSession(sessionData);
+    if (response.data) {
       await fetchMachineStatus(true);
-    } catch (err) {
-      console.error('Failed to book machine:', err);
-      throw new Error(err.message || 'Failed to book machine');
     }
   };
 
   // Handle deleting a session
   const handleDeleteSession = async (sessionId) => {
-    try {
-      console.log('Deleting session:', sessionId);
-      await sessionAPI.deleteSession(sessionId);
-      console.log('Session deleted successfully, refreshing data...');
-      
-      // Refresh machine status after deletion
+    const response = await sessionAPI.deleteSession(sessionId);
+    if (response.data) {
       await fetchMachineStatus(true);
-    } catch (err) {
-      console.error('Failed to delete session:', err);
-      throw new Error(err.message || 'Failed to delete session');
     }
   };
 
@@ -177,7 +150,6 @@ function App() {
 
   // Manual refresh
   const handleRefresh = () => {
-    console.log('Manual refresh triggered');
     fetchMachineStatus(true);
   };
 
