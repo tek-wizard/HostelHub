@@ -1,5 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -43,6 +47,7 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
+  color: white;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -64,5 +69,35 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+    color: #213547;
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  .border-3 {
+    border-width: 3px;
+  }
+  
+  .w-30 {
+    width: 7.5rem;
+  }
+  
+  .h-30 {
+    height: 7.5rem;
+  }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+  
+  .from-gray-200 {
+    --tw-gradient-from: #e5e7eb;
+    --tw-gradient-to: rgb(229 231 235 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+  
+  .to-gray-100 {
+    --tw-gradient-to: #f3f4f6;
   }
 }
