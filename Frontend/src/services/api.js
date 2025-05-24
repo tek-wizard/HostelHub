@@ -9,10 +9,31 @@ const api = axios.create({
     }
 });
 
+// Request interceptor for logging
+api.interceptors.request.use(
+    (config) => {
+        console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data);
+        return config;
+    },
+    (error) => {
+        console.error('❌ API Request Error:', error);
+        return Promise.reject(error);
+    }
+);
+
 // Response interceptor for logging and error handling
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+        return response;
+    },
     (error) => {
+        console.error('❌ API Response Error:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+            url: error.config?.url
+        });
         return Promise.reject(error);
     }
 );
@@ -25,6 +46,7 @@ export const sessionAPI = {
             const response = await api.get('/sessions/machine-status');
             return response.data;
         } catch (error) {
+            console.error('Failed to fetch machine status:', error);
             throw new Error(error.response?.data?.message || 'Failed to fetch machine status');
         }
     },
@@ -35,6 +57,7 @@ export const sessionAPI = {
             const response = await api.post('/sessions/create', sessionData);
             return response.data;
         } catch (error) {
+            console.error('Failed to create session:', error);
             throw new Error(error.response?.data?.message || 'Failed to create session');
         }
     },
@@ -45,6 +68,7 @@ export const sessionAPI = {
             const response = await api.delete(`/sessions/${sessionId}`);
             return response.data;
         } catch (error) {
+            console.error('Failed to delete session:', error);
             throw new Error(error.response?.data?.message || 'Failed to delete session');
         }
     },
@@ -55,6 +79,7 @@ export const sessionAPI = {
             const response = await api.get('/sessions/all');
             return response.data;
         } catch (error) {
+            console.error('Failed to fetch all sessions:', error);
             throw new Error(error.response?.data?.message || 'Failed to fetch sessions');
         }
     },
@@ -65,6 +90,7 @@ export const sessionAPI = {
             const response = await api.get('/sessions/active');
             return response.data;
         } catch (error) {
+            console.error('Failed to fetch active sessions:', error);
             throw new Error(error.response?.data?.message || 'Failed to fetch active sessions');
         }
     }

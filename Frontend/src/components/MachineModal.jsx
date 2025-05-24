@@ -9,57 +9,73 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Reset form when modal opens/closes
     React.useEffect(() => {
         if (machine) {
+            console.log('Modal opened for machine:', machine);
             setFormData({ name: '', phoneNumber: '', duration: '' });
             setError('');
+            // Prevent body scroll when modal opens
             document.body.classList.add('modal-open');
         }
         
+        // Cleanup function to remove class when component unmounts or machine changes
         return () => {
             document.body.classList.remove('modal-open');
         };
     }, [machine]);
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        
-        if (error) {
-            setError('');
+        try {
+            const { name, value } = e.target;
+            console.log(`Form input changed: ${name} = ${value}`);
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+            
+            // Clear error when user starts typing
+            if (error) {
+                setError('');
+            }
+        } catch (error) {
+            console.error('Error handling input change:', error);
         }
     };
 
     const validateForm = () => {
-        const errors = [];
-        
-        if (!formData.name.trim()) {
-            errors.push('Name is required');
-        }
-        
-        if (!formData.phoneNumber.trim()) {
-            errors.push('Phone number is required');
-        } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
-            errors.push('Please enter a valid 10-digit phone number');
-        }
-        
-        if (!formData.duration) {
-            errors.push('Duration is required');
-        } else {
-            const duration = parseInt(formData.duration);
-            if (isNaN(duration) || duration < 1 || duration > 180) {
-                errors.push('Duration must be between 1 and 180 minutes');
+        try {
+            const errors = [];
+            
+            if (!formData.name.trim()) {
+                errors.push('Name is required');
             }
-        }
+            
+            if (!formData.phoneNumber.trim()) {
+                errors.push('Phone number is required');
+            } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
+                errors.push('Please enter a valid 10-digit phone number');
+            }
+            
+            if (!formData.duration) {
+                errors.push('Duration is required');
+            } else {
+                const duration = parseInt(formData.duration);
+                if (isNaN(duration) || duration < 1 || duration > 180) {
+                    errors.push('Duration must be between 1 and 180 minutes');
+                }
+            }
 
-        return errors;
+            return errors;
+        } catch (error) {
+            console.error('Error validating form:', error);
+            return ['Form validation error'];
+        }
     };
 
     const handleBookMachine = async () => {
         try {
+            console.log('Attempting to book machine with data:', formData);
             setIsLoading(true);
             setError('');
 
@@ -78,8 +94,10 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
             };
 
             await onBookMachine(sessionData);
+            console.log('Machine booked successfully');
             handleClose();
         } catch (error) {
+            console.error('Error booking machine:', error);
             setError(error.message || 'Failed to book machine. Please try again.');
         } finally {
             setIsLoading(false);
@@ -88,6 +106,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
     const handleDeleteSession = async () => {
         try {
+            console.log('Attempting to delete session:', machine.session?.id);
             setIsLoading(true);
             setError('');
 
@@ -96,8 +115,10 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
             }
 
             await onDeleteSession(machine.session.id);
+            console.log('Session deleted successfully');
             handleClose();
         } catch (error) {
+            console.error('Error deleting session:', error);
             setError(error.message || 'Failed to delete session. Please try again.');
         } finally {
             setIsLoading(false);
@@ -106,6 +127,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
     const handlePickupClothes = async () => {
         try {
+            console.log('Clothes picked up for session:', machine.session?.id);
             setIsLoading(true);
             setError('');
 
@@ -114,8 +136,10 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
             }
 
             await onDeleteSession(machine.session.id);
+            console.log('Clothes picked up successfully, session deleted');
             handleClose();
         } catch (error) {
+            console.error('Error during pickup:', error);
             setError(error.message || 'Failed to process pickup. Please try again.');
         } finally {
             setIsLoading(false);
@@ -124,9 +148,12 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
 
     const handleCallUser = () => {
         if (machine.session?.phoneNumber) {
+            // Open phone dialer or copy phone number
             if (navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i)) {
+                // Mobile device - open phone dialer
                 window.open(`tel:${machine.session.phoneNumber}`, '_self');
             } else {
+                // Desktop - copy to clipboard
                 navigator.clipboard.writeText(machine.session.phoneNumber).then(() => {
                     alert(`Phone number ${machine.session.phoneNumber} copied to clipboard!`);
                 }).catch(() => {
@@ -136,6 +163,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
         }
     };
 
+    // Handle modal close with cleanup
     const handleClose = () => {
         document.body.classList.remove('modal-open');
         onClose();
@@ -227,8 +255,9 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
     return (
         <div className="modal-overlay" onClick={handleBackdropClick}>
             <div className="modal-content">
+                {/* Header */}
                 <div className="modal-header" style={{background: statusConfig.bg}}>
-                    <button 
+                    <button
                         className="modal-close-btn"
                         onClick={handleClose}
                         aria-label="Close modal"
@@ -244,7 +273,9 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                     </div>
                 </div>
 
+                {/* Content */}
                 <div className="modal-body">
+                    {/* Machine Details */}
                     <div style={{
                         background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)', 
                         borderRadius: '12px', 
@@ -259,13 +290,13 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                         </h4>
                         
                         <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px'}}>
-                            <div style={{
+                        <div style={{
                                 background: 'white', 
                                 borderRadius: '8px', 
                                 padding: '12px', 
                                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                                 animation: 'scaleIn 0.4s ease-out 0.2s both'
-                            }}>
+                        }}>
                                 <div style={{fontSize: '12px', fontWeight: '600', color: '#718096', marginBottom: '4px'}}>NUMBER</div>
                                 <div style={{fontSize: '14px', fontWeight: 'bold', color: '#2d3748'}}>{machine.machineNumber}</div>
                             </div>
@@ -285,6 +316,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                         </div>
                     </div>
 
+                    {/* Error Display */}
                     {error && (
                         <div style={{
                             background: 'rgba(245, 101, 101, 0.1)', 
@@ -306,6 +338,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                         </div>
                     )}
 
+                    {/* Current Session Information */}
                     {machine.session && (
                         <div className="session-info" style={{
                             marginBottom: '24px',
@@ -401,6 +434,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                         </div>
                     )}
 
+                    {/* Available - Booking Form */}
                     {isAvailable && (
                         <div style={{
                             background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', 
@@ -472,6 +506,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 </select>
                             </div>
 
+                            {/* Enhanced Book Button */}
                             <button
                                 onClick={handleBookMachine}
                                 disabled={isLoading}
@@ -518,7 +553,8 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                         </div>
                     )}
 
-                    <div style={{
+                    {/* Action Buttons */}
+                                <div style={{
                         display: 'flex', 
                         flexDirection: 'column', 
                         gap: '12px',
@@ -585,7 +621,7 @@ const MachineModal = ({ machine, onClose, onBookMachine, onDeleteSession }) => {
                                 </button>
                             </div>
                         )}
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
