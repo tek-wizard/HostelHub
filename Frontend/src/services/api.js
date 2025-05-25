@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = "https://hostelhub-mnr8.onrender.com" || "http://localhost:8000";
+const port = process.env.PORT || 8000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
 
 const api = axios.create({
     baseURL: API_BASE_URL,
