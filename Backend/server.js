@@ -10,11 +10,14 @@ const app = express();
 
 // CORS configuration for production and development
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://your-vercel-domain.vercel.app', 'https://hostelhub.vercel.app'] // Update with your actual domain
-        : ['http://localhost:5173', 'http://localhost:3000'],
-    credentials: true,
-    optionsSuccessStatus: 200
+  origin: [
+    'http://localhost:5173', // Your Vite dev server
+    'http://localhost:8000',
+    'https://hostel-hub-alpha.vercel.app/'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+//   credentials: true
 };
 
 app.use(cors(corsOptions));

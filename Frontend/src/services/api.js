@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 // API base URL - works for both development and production
-const API_BASE_URL = import.meta.env.PROD 
-  ? '/api'  // In production, use relative path
-  : '/api'; // In development, proxy handles this
+const API_BASE_URL = "https://hostelhub-mnr8.onrender.com" || "http://localhost:8000"
 
 // Create axios instance with base configuration
 const api = axios.create({
