@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Header = ({ summary, onRefresh, refreshing, onToggleSidebar, isMobile, error }) => {
+const Header = ({ overallSummary, onRefresh, refreshing }) => {
   return (
     <header className="app-header">
       <div className="header-content">
@@ -18,19 +18,19 @@ const Header = ({ summary, onRefresh, refreshing, onToggleSidebar, isMobile, err
           <div className="status-pills">
             <div className="status-pill available">
               <div className="status-dot"></div>
-              Available: {summary.available}
+              Available: {overallSummary.available}
             </div>
             <div className="status-pill occupied">
               <div className="status-dot"></div>
-              In Use: {summary.occupied}
+              In Use: {overallSummary.occupied}
             </div>
             <div className="status-pill waiting">
               <div className="status-dot"></div>
-              Pickup: {summary.waiting}
+              Pickup: {overallSummary.waitingPickup}
             </div>
             <div className="status-pill total">
               <div className="status-dot total-dot"></div>
-              Total: {summary.total}
+              Total: {overallSummary.total}
             </div>
           </div>
         </div>

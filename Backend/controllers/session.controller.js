@@ -35,6 +35,7 @@ export const createSession = async (req, res) => {
         });
 
         const savedSession = await newSession.save();
+
         res.status(201).json({
             message: "Session created successfully",
             session: savedSession
@@ -51,40 +52,46 @@ export const createSession = async (req, res) => {
 // Get machine status for all machines
 export const getMachineStatus = async (req, res) => {
     try {
+        // Mock machine data - you can replace this with actual database call later
         const machinesData = [
             {
                 machineNumber: 1,
-                name: "Machine 1",
-                location: "Ground Floor - Block A",
+                name: "WashMax Pro 3000",
+                location: "Ground Floor - Hostel A",
                 capacity: "8 kg",
+                lastMaintenance: new Date("2024-01-15"),
                 isActive: true
             },
             {
                 machineNumber: 2,
-                name: "Machine 2", 
-                location: "First Floor - Block A",
+                name: "AquaClean Deluxe",
+                location: "First Floor - Hostel A",
                 capacity: "10 kg",
+                lastMaintenance: new Date("2024-01-10"),
                 isActive: true
             },
             {
                 machineNumber: 3,
-                name: "Machine 3",
-                location: "Ground Floor - Block B",
+                name: "SpinMaster Elite",
+                location: "Ground Floor - Hostel B",
                 capacity: "7 kg",
+                lastMaintenance: new Date("2024-01-20"),
                 isActive: false
             },
             {
                 machineNumber: 4,
-                name: "Machine 4",
-                location: "First Floor - Block B", 
+                name: "UltraWash 2024",
+                location: "First Floor - Hostel B",
                 capacity: "9 kg",
+                lastMaintenance: new Date("2024-01-05"),
                 isActive: true
             },
             {
                 machineNumber: 5,
-                name: "Machine 5",
-                location: "Second Floor - Block A",
+                name: "PowerClean Max",
+                location: "Second Floor - Hostel A",
                 capacity: "8 kg",
+                lastMaintenance: new Date("2024-01-12"),
                 isActive: true
             }
         ];
@@ -102,6 +109,7 @@ export const getMachineStatus = async (req, res) => {
                 name: machineData.name,
                 location: machineData.location,
                 capacity: machineData.capacity,
+                lastMaintenance: machineData.lastMaintenance,
                 isActive: machineData.isActive
             };
 
@@ -109,6 +117,7 @@ export const getMachineStatus = async (req, res) => {
                 const isExpired = activeSession.isExpired();
                 
                 if (!isExpired) {
+                    // Machine is still occupied (session not expired)
                     machines.push({
                         ...baseMachineInfo,
                         status: 'occupied',
@@ -122,6 +131,7 @@ export const getMachineStatus = async (req, res) => {
                         }
                     });
                 } else {
+                    // Session expired - machine is waiting for pickup
                     machines.push({
                         ...baseMachineInfo,
                         status: 'waiting_pickup',
@@ -136,6 +146,7 @@ export const getMachineStatus = async (req, res) => {
                     });
                 }
             } else {
+                // No active session - machine is available
                 machines.push({
                     ...baseMachineInfo,
                     status: 'available',
@@ -170,7 +181,9 @@ export const getActiveSessions = async (req, res) => {
         const activeSessions = await Session.find({ isActive: true }).sort({ createdAt: -1 });
         res.status(200).json({ sessions: activeSessions });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching active sessions", error: error.message });
+        res.status(500).json({
+             message: "Error fetching active sessions", error: error.message 
+        });
     }
 };
 
@@ -179,13 +192,18 @@ export const deleteSession = async (req, res) => {
     try {
         const session = await Session.findById(req.params.id);
         
-        if (!session) {
+        if(!session){
             return res.status(404).json({ message: "Session not found" });
         }
 
         await Session.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: "Session deleted successfully" });
+
+        res.status(200).json({
+            message: "Session deleted successfully"
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error deleting session", error: error.message });
+        res.status(500).json({ 
+            message: error.message
+        });
     }
 };

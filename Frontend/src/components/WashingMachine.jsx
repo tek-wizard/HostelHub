@@ -81,17 +81,21 @@ const WashingMachine = ({ machine, onClick }) => {
 
     return (
         <div className="washing-machine-card" onClick={handleClick}>
+            {/* Status Header */}
             <div className={`status-header status-${machine.status}`}>
                 {statusText}
             </div>
 
+            {/* Machine Visual */}
             <div className="machine-visual">
                 <div className={`machine-circle ${machine.status}`}>
                     {machine.machineNumber}
                 </div>
             </div>
 
+            {/* Machine Details */}
             <div className="machine-details">
+                {/* Basic Info */}
                 {machine.location && (
                     <div className="detail-row">
                         <span className="detail-label">LOCATION</span>
@@ -99,6 +103,7 @@ const WashingMachine = ({ machine, onClick }) => {
                     </div>
                 )}
 
+                {/* Session Information */}
                 {machine.session && (
                     <div className="session-info">
                         <div className="session-title">Active Session</div>
@@ -133,6 +138,7 @@ const WashingMachine = ({ machine, onClick }) => {
                     </div>
                 )}
 
+                {/* Available Machine Call-to-Action */}
                 {machine.status === 'available' && (
                     <div className="ready-to-use">
                         ✨ Ready to Use!
