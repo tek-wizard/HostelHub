@@ -13,7 +13,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173', // Your Vite dev server
     'http://localhost:8000',
-    'https://hostel-hub-alpha.vercel.app/'
+    'https://hostel-hub-alpha.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

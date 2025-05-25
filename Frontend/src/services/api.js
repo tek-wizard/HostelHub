@@ -37,15 +37,15 @@ api.interceptors.response.use(
 
 // API functions
 export const sessionAPI = {
-    getMachineStatus: () => api.get('/sessions/machine-status'),
+    getMachineStatus: () => api.get('/api/sessions/machine-status'),
     
-    createSession: (sessionData) => api.post('/sessions/create', sessionData),
+    createSession: (sessionData) => api.post('/api/sessions/create', sessionData),
     
-    deleteSession: (sessionId) => api.delete(`/sessions/${sessionId}`),
+    deleteSession: (sessionId) => api.delete(`/api/sessions/${sessionId}`),
     
-    getAllSessions: () => api.get('/sessions/all'),
+    getAllSessions: () => api.get('/api/sessions/all'),
     
-    getActiveSessions: () => api.get('/sessions/active')
+    getActiveSessions: () => api.get('/api/sessions/active')
 };
 
 export default api; 
