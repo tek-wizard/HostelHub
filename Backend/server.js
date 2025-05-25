@@ -17,17 +17,12 @@ const corsOptions = {
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-//   credentials: true
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
 
-const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
-
+// Define routes BEFORE starting server
 app.use("/api/sessions", sessionRoutes);
 
 // Health check endpoint
@@ -45,11 +40,14 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
+const PORT = process.env.PORT || 8000;
+
 const startServer = async () => {
     try {
         await connectMongoDB();
-        app.listen(PORT, () => {
-            console.log(`🚀 Server running on http://localhost:${PORT}`);
+        // Only ONE app.listen() call here
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Server running on port ${PORT}`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);
